@@ -103,9 +103,9 @@ def MFI_realtime():
     elif mfr10 < 20:
         return 'SELL'
 
-def common_orderID(*strategies): #returns common buy and sell indices
-    buy = [strategy[0] for strategy in strategies][0]
-    sell = [strategy[1] for strategy in strategies][0]
+def common_orderID(*orderIDs_for_all): #returns common buy and sell indices
+    buy = [orderIDs_per_strategy[0] for orderIDs_per_strategy in orderIDs_for_all][0]
+    sell = [orderIDs_per_strategy[1] for orderIDs_per_strategy in orderIDs_for_all][0]
 
     def find_common(all):
         seen = []
