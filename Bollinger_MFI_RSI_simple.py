@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-start = datetime(2022, 1, 1)
+start = datetime(2020, 1, 1)
 end = datetime(2022, 11, 11)
 df = web.DataReader('005930.KS', 'yahoo', start, end)
 df_realtime = pd.DataFrame([])
@@ -103,6 +103,26 @@ def MFI_realtime():
     elif mfr10 < 20:
         return 'SELL'
 
+def RSI():
+    global df
+
+    df['Diff'] = df.Close.diff(1)
+    df['Gain'] = df.Diff.clip(lower=0).round(2)
+    df['Loss'] = df.Diff.clip(upper=0).abs().round(2)
+    df['AvgGain'] = df.Gain.rolling(window=10).mean()
+    df['AvgLoss'] = df.Loss.rolling(window=10).mean()
+    df['RSI'] = 100 - 100 / (1 + df.AvgGain/df.AvgLoss)
+
+    buy, sell = [], []
+    for i in range(len(df.Close)):
+        if df.RSI.values[i] < 10:
+            buy.append(i)
+        elif df.RSI.values[i] > 70:
+            sell.append(i)
+
+    return buy, sell
+
+
 def common_orderID(*orderIDs_for_all): #returns common buy and sell indices
     buy = [orderIDs_per_strategy[0] for orderIDs_per_strategy in orderIDs_for_all][0]
     sell = [orderIDs_per_strategy[1] for orderIDs_per_strategy in orderIDs_for_all][0]
@@ -192,3 +212,7 @@ def order_easy(strategies, shares):
 order_easy([Bollinger(), MFI()], 20)
 order_easy([Bollinger()], 20)
 order_easy([MFI()], 20)
+order_easy([RSI()], 20)
+order_easy([Bollinger(), MFI(), RSI()], 20)
+order_easy([MFI(), RSI()], 20)
+order_easy([Bollinger(), RSI()], 20)
