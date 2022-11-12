@@ -3,7 +3,9 @@ import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-start = datetime(2020, 1, 1)
+# start = datetime(2012, 4, 1)
+# end = datetime(2016, 2, 5)
+start = datetime(2019, 1, 1)
 end = datetime(2022, 11, 11)
 df = web.DataReader('005930.KS', 'yahoo', start, end)
 df_realtime = pd.DataFrame([])
@@ -14,8 +16,8 @@ BUY_REALTIME, SELL_REALTIME = 0, 0
 orders_realtime = pd.DataFrame([])
 
 def Bollinger():
-    global df
-    
+    global df    
+
     df['MA20'] = df.Close.rolling(window=20).mean()
     df['STD'] = df.Close.rolling(window=20).std()
     df['Upper'] = df.MA20 + 2 * df.STD
@@ -122,6 +124,30 @@ def RSI():
 
     return buy, sell
 
+def MACD():
+    global df
+    fast = 12
+    slow = 26
+    signal = 9
+    # weighting_decrese = 2 / (fast + 1)
+
+    df['EMA12'] = df.Close.ewm(span=fast, adjust=False).mean()
+    df['EMA26'] = df.Close.ewm(span=slow, adjust=False).mean()
+    df['MACD'] = df.EMA12 - df.EMA26
+    df['Signal'] = df.MACD.ewm(span=signal, adjust=False).mean() #This is same as EMA9 of MACD
+    df['Histogram'] = df.MACD - df.Signal
+
+    buy, sell = [], []
+    for i in range(len(df.Close)):
+        if df.MACD.values[i] > df.Signal.values[i]:
+            buy.append(i)
+        elif df.MFR10.values[i] < df.Signal.values[i]:
+            sell.append(i)
+    
+    return buy, sell
+
+
+
 
 def common_orderID(*orderIDs_for_all): #returns common buy and sell indices
     buy = [orderIDs_per_strategy[0] for orderIDs_per_strategy in orderIDs_for_all][0]
@@ -153,11 +179,11 @@ def make_order(orderID):
         if i in orderID[0]: #orderID[0]: a list of buy orders
             BUY += 1
             buy.append(df.Close.values[i])
-            print(f'BUY  #{BUY} at {df.Close[i]}KRW')
+            # print(f'BUY  #{BUY} at {df.Close[i]}KRW')
         elif i in orderID[1] and BUY > SELL: # orderID[1]: a list of sell orders
             SELL += 1
             sell.append(df.Close.values[i])
-            print(f'SELL #{SELL} at {df.Close[i]}KRW')
+            # print(f'SELL #{SELL} at {df.Close[i]}KRW')
             
     return orderID, buy, sell        
 
@@ -216,3 +242,9 @@ order_easy([RSI()], 20)
 order_easy([Bollinger(), MFI(), RSI()], 20)
 order_easy([MFI(), RSI()], 20)
 order_easy([Bollinger(), RSI()], 20)
+order_easy([MACD()], 20)
+order_easy([Bollinger(), MFI(), RSI(), MACD()], 20)
+order_easy([Bollinger(), MACD()], 20)
+order_easy([MFI(), MACD()], 20)
+order_easy([RSI(), MACD()], 20)
+order_easy([Bollinger(), RSI(), MACD()], 20)
