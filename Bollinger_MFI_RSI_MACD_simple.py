@@ -148,8 +148,16 @@ def MACD():
 
 
 def common_orderID(*orderIDs_for_all): #returns common buy and sell indices
+    # orderIDs_for_all: ([ (1st strategy's [buy row#], [sell row#]), (2nd strategy's [buy row#], [sell row#]),...])
+    # To explain with more details, it is as follows:
+    # orderIDs_for_all: ([ ( [buy row#], [sell row#] ), ( [buy row#], [sell row#] ) ])
+    # Each pair of ([buy row#], [sell row#]) represents buy and sell orders for each strategy
     buy = [orderIDs_per_strategy[0] for orderIDs_per_strategy in orderIDs_for_all[0]]
     sell = [orderIDs_per_strategy[1] for orderIDs_per_strategy in orderIDs_for_all[0]]
+    # buy: [ [1st strategy's buy row#], [2nd strategy's buy row#],.. ]
+    # sell: [ [1st strategy's sell row#], [2nd strategy's sell row#],.. ]
+
+
 
     def find_common(all):
         seen = set()
@@ -159,9 +167,13 @@ def common_orderID(*orderIDs_for_all): #returns common buy and sell indices
                 common.add(x)
             else:
                 seen.add(x)
-        return list(common) #convert the set to a list for iteration
+
+        #converts the set to a list and sort for iteration
+        #returns buy and sell lists in the form of []         
+        return sorted(list(common)) 
     
-    #The input lists - buy, sell - are lists with multiple dimension. Flatten the list upon input to iterate all elements     
+    #The input lists - buy, sell - are lists with multiple dimension. Flatten the list upon input to iterate all elements
+    #returns ([common buy row#],[common sell row#])     
     return find_common([i for sub in buy for i in sub]), find_common([i for sub in sell for i in sub]) 
 
 
@@ -179,9 +191,16 @@ def make_order(orderID):
     buy, sell = [], []
     orders_made = [[],[]]
     
-    #Implementing a single strategy, orderID has an extra dimension [[[],[]]]. To iterate, take out one layer by indexing [0]
+    #orderID dimensions
+    # 1. for single strategies: [([buy row#], [sell row#])]
+    # 2. for multistrategies: ([common buy row#], [common sell row#])
+    # Implementing a single strategy, orderID has an extra dimension.
+    # For single strategies, to iterate properly, take out one layer by indexing [0]
     if len(orderID) == 1:
         orderID = orderID[0]
+    
+    # orderID[0]: [common buy row#]
+    # orderID[1]: [common sell row#]
        
     for i in range(len(df.Close)):
         if i in orderID[0]: #orderID[0]: a list of buy orders
@@ -253,6 +272,10 @@ def visualize(orders_made):
 
 
 def order_easy(strategies, shares):
+    #strategies dimensions
+    # 1. sigle strategies: [([buy row#], [sell row#])]
+    # 2. multistrategies: [([1st strategy's buy row#], [1st strategy's sell row#]),
+    #                      ([2nd strategy's buy row#], [2nd strategy's sell row#])]
     if len(strategies) > 1:
         common_orders_ID = common_orderID(strategies)
         orders_made = make_order(common_orders_ID)
