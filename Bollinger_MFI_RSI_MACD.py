@@ -3,12 +3,12 @@ import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-# start = datetime(2012, 4, 1)
-# end = datetime(2016, 2, 5)
+
 start = datetime(2022, 1, 1)
 end = datetime(2022, 11, 11)
 df = web.DataReader('005930.KS', 'yahoo', start, end)
 df_realtime = pd.DataFrame([])
+strategies = []
 
 # bollinger_df = pd.DataFrame([])
 mfi_df = pd.DataFrame([])
@@ -16,8 +16,10 @@ BUY_REALTIME, SELL_REALTIME = 0, 0
 orders_realtime = pd.DataFrame([])
 
 def Bollinger():
-    global df    
+    global df, strategies
 
+    strategies.append('Bollinger')  
+    
     df['MA20'] = df.Close.rolling(window=20).mean()
     df['STD'] = df.Close.rolling(window=20).std()
     df['Upper'] = df.MA20 + 2 * df.STD
@@ -55,8 +57,10 @@ def Bollinger():
 #         return 'SELL'
 
 def MFI():
-    global df
-    
+    global df, strategies
+
+    strategies.append('MFI')
+        
     df['TP'] = (df.High + df.Low + df.Close) / 3
     df['PMF'] = 0
     df['NMF'] = 0
@@ -106,7 +110,9 @@ def MFI():
 #         return 'SELL'
 
 def RSI():
-    global df
+    global df, strategies
+
+    strategies.append('RSI')
 
     df['Diff'] = df.Close.diff(1)
     df['Gain'] = df.Diff.clip(lower=0).round(2)
@@ -126,7 +132,9 @@ def RSI():
 
 
 def Volume_RSI():
-    global df
+    global df, strategies
+
+    strategies.append('Volume RSI')
     
     df['VolDiff'] = df.Volume.diff(1)
     df['VolGain'] = df.VolDiff.clip(lower=0)
@@ -146,7 +154,10 @@ def Volume_RSI():
 
 
 def MACD():
-    global df
+    global df, strategies
+
+    strategies.append('MACD')
+
     fast = 12
     slow = 26
     signal = 9
@@ -267,21 +278,23 @@ def calc_returns(orders_made):
     eval['Returns'] = (eval.Sell / eval.Buy - 1) * 100
     
 def calc_total_returns(shares):
-    global eval
+    global eval, strategies
         
     total_buy = eval.Buy.sum() * shares
     total_sell = eval.Sell.sum() * shares
+    print(f'Strategies Implemented: {strategies}')
     print(f'Total Investment: {total_buy:,}KRW, Total Returns: {total_sell-total_buy:,}KRW or {(total_sell/total_buy-1)*100:,.00f}%')
 
 
 def visualize(orders_made):
-    global df
+    global df, strategies
 
     buy_index = orders_made[0][0]
     sell_index = orders_made[0][1]
 
     fig = plt.figure(figsize=(12,8))
     top_axes = plt.subplot2grid((4,4), (0,0), rowspan=3, colspan=4)
+    plt.title(label=strategies, loc='right')   
     bottom_axes = plt.subplot2grid((4,4), (3,0), rowspan=1, colspan=4)
     bottom_axes.get_yaxis().get_major_formatter().set_scientific(False)
     top_axes.plot(df.index, df.Close, label = 'Close')
