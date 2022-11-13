@@ -9,14 +9,17 @@ start = datetime(2019, 1, 1)
 end = datetime(2022, 11, 11)
 df = web.DataReader('005930.KS', 'yahoo', start, end)
 df_realtime = pd.DataFrame([])
+strategies = []
 
-# bollinger_df = pd.DataFrame([])
+
 mfi_df = pd.DataFrame([])
 BUY_REALTIME, SELL_REALTIME = 0, 0
 orders_realtime = pd.DataFrame([])
 
 def Bollinger(): # modified by me -> buy and sell conditions reversed and it resulted better
-    global df    
+    global df, strategies
+
+    strategies.append('Bollinger')    
 
     df['MA20'] = df.Close.rolling(window=20).mean()
     df['STD'] = df.Close.rolling(window=20).std()
@@ -41,35 +44,15 @@ def Bollinger(): # modified by me -> buy and sell conditions reversed and it res
             
     return buy, sell
     
-# def Bollinger_realtime(): 
-#     global df_realtime, bollinger_df
-#     #df_realtime here is OHLC information for realtime transactions
-    
-#     ma20 = df_realtime.Close.rolling(window=20).mean()
-#     std = df_realtime.Close.rolling(window=20).std()
-#     upper = ma20 + 2 * std
-#     lower = ma20 - 2 * std
-#     pb = (df_realtime.Close - lower) / (upper - lower)
-#     add_df = pd.DataFrame([[ma20, std, upper, lower, pb]], columns = ['ma20', 'std', 'upper', 'lower', 'pb'])
-#     bollinger_df.append(add_df)
-
-#     if ma20 == 'NaN':
-#         return None
-#     if pb > 0.8:
-#         return 'BUY'
-#     elif pb < 0.2:
-#         return 'SELL'
-
 def MFI(): # modified by me -> buy and sell conditions are reversed and it resulted better.
-    global df
+    global df, strategies
+
+    strategies.append('MFI')
     
     df['TP'] = (df.High + df.Low + df.Close) / 3
     df['PMF'] = 0
-    df['NMF'] = 0
-    
-    # df['TP2'] = df.TP.shift(1)
-    # df[df.TP < df.TP2] = 
-        
+    df['NMF'] = 0    
+       
     for i in range(len(df.Close)-1):
         if df.TP.values[i] < df.TP.values[i+1]:
             df.PMF.values[i+1] = df.TP.values[i+1] * df.Volume.values[i+1]
@@ -95,30 +78,10 @@ def MFI(): # modified by me -> buy and sell conditions are reversed and it resul
 
     return buy, sell
    
-# def MFI_realtime():    
-#     global df_realtime
-    
-#     tp = (df_realtime.High + df_realtime.Low + df_realtime.Close) / 3
-#     if mfi_df.tp[-1] < tp:
-#         pmf = tp * df_realtime.Volume[-1]
-#         nmf = 0
-#     else:
-#         nmf = tp * df_realtime.Volume[-1]
-#         pmf = 0
-#     mfr = mfi_df.pmf.rolling(windows=10).sum() / mfi_df.nmf.rolling(window=10).sum()
-#     mfr10 = 100 - 100 / (1 + mfr)
-#     add_df = pd.DataFrame([[tp, pmf, nmf, mfr, mfr10]], columns = ['tp', 'pmf', 'nmf', 'mfr', 'mfr10'])
-#     mfi_df.append(add_df)
-    
-#     if mfr == 'NaN':
-#         return None    
-#     if mfr10 > 80:
-#         return 'BUY'
-#     elif mfr10 < 20:
-#         return 'SELL'
-
 def RSI(): #modified by me -> changed the numbers by which buy and sell are decided to make the number of transactions bigger
-    global df
+    global df, strategies
+
+    strategies.append('RSI')
 
     df['Diff'] = df.Close.diff(1)
     df['Gain'] = df.Diff.clip(lower=0).round(2)
@@ -140,12 +103,12 @@ def RSI(): #modified by me -> changed the numbers by which buy and sell are deci
         elif df.RSI.values[i] > 60:
             sell.append(i)
     
-    print('RSI buys: ', buy, '      #: ', len(buy), '\n\n', 'RSI sells: ', sell, '      #: ', len(sell),'\n\n')
-
     return buy, sell
 
 def Volume_RSI():
-    global df
+    global df, strategies
+
+    strategies.append('Volume RSI')
     
     df['VolDiff'] = df.Volume.diff(1)
     df['VolGain'] = df.VolDiff.clip(lower=0)
@@ -161,11 +124,13 @@ def Volume_RSI():
         elif df.VolRSI.values[i] > 60:
             sell.append(i)
     
-    print('Volume RSI buys: ', buy, '       #: ',len(buy),'\n\n', 'Volume RSI sells: ', sell,'      #: ',len(sell),'\n\n')        
     return buy, sell
 
 def MACD():
-    global df
+    global df, strategies
+
+    strategies.append('MACD')
+
     fast = 12
     slow = 26
     signal = 9
@@ -181,19 +146,16 @@ def MACD():
     for i in range(len(df.Close)):
         if df.MACD.values[i] > df.Signal.values[i]:
             buy.append(i)
-        elif df.MFR10.values[i] < df.Signal.values[i]:
+        elif df.MACD.values[i] < df.Signal.values[i]:
             sell.append(i)
     
     return buy, sell
 
 
 def common_orderID(*orderIDs_for_all): #returns common buy and sell indices
-    print('ordersIDs_for_all in common_orderID before processing: ', orderIDs_for_all,'         #: ',len(orderIDs_for_all), '\n\n')
     buy = [orderIDs_per_strategy[0] for orderIDs_per_strategy in orderIDs_for_all[0]]
     sell = [orderIDs_per_strategy[1] for orderIDs_per_strategy in orderIDs_for_all[0]]
     
-    print('buys in common_orderID before removal after indexing[0]: ', buy,'      #: ', len(buy), '\n\n', 'sells in common_orderID before removal after indexing[0]: ', sell, '     #: ', len(sell), '\n\n')
-
     def find_common(all):
         seen = set()
         common = set()
@@ -203,27 +165,16 @@ def common_orderID(*orderIDs_for_all): #returns common buy and sell indices
             else:
                 seen.add(x)                
         return list(common)
-    a = find_common([i for sub in buy for i in sub])
-    b = find_common([i for sub in sell for i in sub])
-    print('buys in common_orderID after removal: ', a, '         #: ', len(a),'\n\nsells in common_orderID after removal', b, '     #: ', len(b),'\n\n')
-    
+        
     return find_common([i for sub in buy for i in sub]), find_common([i for sub in sell for i in sub])
 
-# def common_orderID_realtime():
-#     if Bollinger_realtime() == MFI_realtime() == 'BUY':
-#         make_order_realtime('BUY')
-#     elif Bollinger_realtime == MFI_realtime() == 'SELL':
-#         make_order_realtime('SELL')
-
 def make_order(orderID): 
-    #simulate buy and sell orders in a sequential time line
+    #simulates buy and sell orders in a sequential time line
     #returns buy and sell index, considering no short order is possible
     global df
     BUY, SELL = 0, 0
     buy, sell = [], []
     orders_made = [[],[]]
-    
-    print('common orders ID in make_order: ', orderID, '       #: ', len(orderID),'\n\n')
     
     if len(orderID) == 1:
         orderID = orderID[0]       
@@ -242,22 +193,7 @@ def make_order(orderID):
             
     return orders_made, buy, sell        
 
-# def make_order_realtime(order):
-#     global BUY_REALTIME, SELL_REALTIME
-    
-#     if order == 'BUY':
-#         BUY_REALTIME += 1
-#         buy = df_realtime.Close[-1]
-#         sell = 0
-#     elif order == 'SELL' and BUY_REALTIME > SELL_REALTIME:
-#         SELL_REALTIME += 1
-#         sell = df_realtime.Close[-1]
-#         buy = 0
-    
-#     add_df = pd.DataFrame([[df_realtime.index, buy, sell]], columns = ['Date', 'Buy', 'Sell'])
-#     orders_realtime.append(add_df)
  
-  
 def calc_returns(orders_made):
     global df, eval
 
@@ -272,28 +208,30 @@ def calc_returns(orders_made):
     eval['Returns'] = (eval.Sell / eval.Buy - 1) * 100
     
 def calc_total_returns(shares):
-    global eval
+    global eval, strategies
         
     total_buy = eval.Buy.sum() * shares
     total_sell = eval.Sell.sum() * shares
+    print(f'Strategies Implemented: {strategies}')
     print(f'Total Investment: {total_buy:,}KRW, Total Returns: {total_sell-total_buy:,}KRW or {(total_sell/total_buy-1)*100:,.00f}%')
 
 
 def visualize(orders_made):
-    global df
+    global df, strategies
 
     buy_index = orders_made[0][0]
     sell_index = orders_made[0][1]
 
     fig = plt.figure(figsize=(12,8))
     top_axes = plt.subplot2grid((4,4), (0,0), rowspan=3, colspan=4)
+    plt.title(label=strategies, loc='right')   
     bottom_axes = plt.subplot2grid((4,4), (3,0), rowspan=1, colspan=4)
-    bottom_axes.get_yaxis().get_major_formatter().set_scientific(False)
+    bottom_axes.get_yaxis().get_major_formatter().set_scientific(False)    
     top_axes.plot(df.index, df.Close, label = 'Close')
     top_axes.plot(df.index[buy_index], df.Close[buy_index], '^r')
     top_axes.plot(df.index[sell_index], df.Close[sell_index], 'vb')
     bottom_axes.plot(df.index, df.Volume)
-
+ 
     plt.show()
 
 
@@ -305,27 +243,27 @@ def order_easy(strategies, shares):
     else:
         orders_made = make_order(strategies)
 
-    print('\n\norders_made in order_easy: ', orders_made)    
     calc_returns(orders_made)
     calc_total_returns(shares)
     visualize(orders_made)
 
 
 
+# strategies should be input in the form of a list for order_easy
+# or, order_easy will think the second strategy as the share nunmer
 
-
-order_easy([Bollinger(), MFI()], 20)
-order_easy([Bollinger()], 20)
-order_easy([MFI()], 20)
-order_easy([RSI()], 20)
-order_easy([Bollinger(), MFI(), RSI()], 20)
-order_easy([MFI(), RSI()], 20)
-order_easy([Bollinger(), RSI()], 20)
-order_easy([MACD()], 20)
-order_easy([Bollinger(), MFI(), RSI(), MACD()], 20)
-order_easy([Bollinger(), MACD()], 20)
-order_easy([MFI(), MACD()], 20)
-order_easy([RSI(), MACD()], 20)
+# order_easy([Bollinger(), MFI()], 20)
+# order_easy([Bollinger()], 20)
+# order_easy([MFI()], 20)
+# order_easy([RSI()], 20)
+# order_easy([Bollinger(), MFI(), RSI()], 20)
+# order_easy([MFI(), RSI()], 20)
+# order_easy([Bollinger(), RSI()], 20)
+# order_easy([MACD()], 20)
+# order_easy([Bollinger(), MFI(), RSI(), MACD()], 20)
+# order_easy([Bollinger(), MACD()], 20)
+# order_easy([MFI(), MACD()], 20)
+# order_easy([RSI(), MACD()], 20)
 order_easy([Bollinger(), RSI(), MACD()], 20)
 order_easy([Volume_RSI()], 20)
 order_easy([RSI(), Volume_RSI()], 20)
