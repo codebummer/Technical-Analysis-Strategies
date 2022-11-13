@@ -230,9 +230,10 @@ def visualize(orders_made):
     top_axes.plot(df.index, df.Close, label = 'Close')
     top_axes.plot(df.index[buy_index], df.Close[buy_index], '^r')
     top_axes.plot(df.index[sell_index], df.Close[sell_index], 'vb')
-    bottom_axes.plot(df.index, df.Volume)
- 
+    bottom_axes.plot(df.index, df.Volume) 
     plt.show()
+    
+    strategies = []
 
 
 def order_easy(strategies, shares):
