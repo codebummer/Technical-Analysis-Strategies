@@ -205,7 +205,7 @@ def common_orderID(*orderIDs_for_all): #returns common buy and sell indices
 #         make_order_realtime('SELL')
 
 def make_order(orderID): 
-    #simulate buy and sell orders in a sequential time line
+    #simulates buy and sell orders in a sequential time line
     #returns buy and sell index, considering no short order is possible
     global df
     BUY, SELL = 0, 0
