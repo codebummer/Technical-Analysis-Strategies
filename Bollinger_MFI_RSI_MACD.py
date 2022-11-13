@@ -311,7 +311,8 @@ def order_easy(strategies, shares):
 
 
 
-
+# strategies should be input in the form of a list for order_easy
+# or, order_easy will think the second strategy as the share nunmer
 
 order_easy([Bollinger(), MFI()], 20)
 order_easy([Bollinger()], 20)
