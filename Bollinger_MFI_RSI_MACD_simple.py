@@ -148,17 +148,22 @@ def MACD():
 
 
 def common_orderID(*orderIDs_for_all): #returns common buy and sell indices
-    buy = [orderIDs_per_strategy[0] for orderIDs_per_strategy in orderIDs_for_all][0]
-    sell = [orderIDs_per_strategy[1] for orderIDs_per_strategy in orderIDs_for_all][0]
+    buy = [orderIDs_per_strategy[0] for orderIDs_per_strategy in orderIDs_for_all[0]]
+    sell = [orderIDs_per_strategy[1] for orderIDs_per_strategy in orderIDs_for_all[0]]
 
     def find_common(all):
-        seen = []
+        seen = set()
+        common = set()
         for x in all:
             if x not in seen:
-                seen.append(x)
-        return seen
+                common.add(x)
+            else:
+                seen.add(x)
+        return list(common) #convert the set to a list for iteration
     
-    return find_common(buy), find_common(sell)
+    #The input lists - buy, sell - are lists with multiple dimension. Flatten the list upon input to iterate all elements     
+    return find_common([i for sub in buy for i in sub]), find_common([i for sub in sell for i in sub]) 
+
 
 # def common_orderID_realtime():
 #     if Bollinger_realtime() == MFI_realtime() == 'BUY':
@@ -173,6 +178,10 @@ def make_order(orderID):
     BUY, SELL = 0, 0
     buy, sell = [], []
     orders_made = [[],[]]
+    
+    #Implementing a single strategy, orderID has an extra dimension [[[],[]]]. To iterate, take out one layer by indexing [0]
+    if len(orderID) == 1:
+        orderID = orderID[0]
        
     for i in range(len(df.Close)):
         if i in orderID[0]: #orderID[0]: a list of buy orders
@@ -185,9 +194,6 @@ def make_order(orderID):
             sell.append(df.Close.values[i])
             orders_made[1].append(i)
             # print(f'SELL #{SELL} at {df.Close[i]}KRW')
-    print('orders_made: ', orders_made, '\n')
-    print('orders_made[0]', orders_made[0],'\n')
-    print('orders_made[1]', orders_made[1],'\n')
             
     return orders_made, buy, sell        
 
@@ -231,8 +237,6 @@ def calc_total_returns(shares):
 def visualize(orders_made):
     global df
 
-    print('orders_made in visualize: ', orders_made)
-
     buy_index = orders_made[0][0]
     sell_index = orders_made[0][1]
 
@@ -250,11 +254,11 @@ def visualize(orders_made):
 
 def order_easy(strategies, shares):
     if len(strategies) > 1:
-        common_orders_ID = common_orderID(strategies[0])
+        common_orders_ID = common_orderID(strategies)
         orders_made = make_order(common_orders_ID)
 
     else:
-        orders_made = make_order(strategies[0])
+        orders_made = make_order(strategies)
 
     
     calc_returns(orders_made)
