@@ -124,6 +124,27 @@ def RSI():
 
     return buy, sell
 
+
+def Volume_RSI():
+    global df
+    
+    df['VolDiff'] = df.Volume.diff(1)
+    df['VolGain'] = df.VolDiff.clip(lower=0)
+    df['VolLoss'] = df.VolDiff.clip(upper=0).abs()
+    df['VolAvgGain'] = df.VolGain.rolling(window=10).mean()
+    df['VolAvgLoss'] = df.VolLoss.rolling(window=10).mean()
+    df['VolRSI'] = 100 - 100 / (1 + df.VolAvgGain / df.VolAvgLoss)
+    
+    buy, sell = [], []
+    for i in range(len(df.Close)):
+        if df.VolRSI.values[i] < 10:
+            buy.append(i)
+        elif df.VolRSI.values[i] > 70:
+            sell.append(i)
+    
+    return buy, sell
+
+
 def MACD():
     global df
     fast = 12
