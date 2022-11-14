@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 # start = datetime(2012, 4, 1)
 # end = datetime(2016, 2, 5)
-start = datetime(2019, 1, 1)
+start = datetime(2022, 1, 1)
 end = datetime(2022, 11, 11)
 df = web.DataReader('005930.KS', 'yahoo', start, end)
 df_realtime = pd.DataFrame([])
@@ -70,10 +70,16 @@ def MFI(): # modified by me -> buy and sell conditions are reversed and it resul
     #     elif df.MFR10.values[i] < 20:
     #         sell.append(i)
 
+    # for i in range(len(df.Close)-1):
+    #     if df.MFR10.values[i] < 80 and df.Close.values[i] > df.Close.values[i+1]:
+    #         buy.append(i)
+    #     elif df.MFR10.values[i] > 20 and df.Close.values[i] < df.Close.values[i+1]:
+    #         sell.append(i)
+
     for i in range(len(df.Close)-1):
-        if df.MFR10.values[i] < 80 and df.Close.values[i] > df.Close.values[i+1]:
+        if df.MFR10.values[i] < 20:
             buy.append(i)
-        elif df.MFR10.values[i] > 20 and df.Close.values[i] < df.Close.values[i+1]:
+        elif df.MFR10.values[i] > 80:
             sell.append(i)
 
     return buy, sell
@@ -125,6 +131,68 @@ def Volume_RSI():
             sell.append(i)
     
     return buy, sell
+
+def MA_Line():
+    global df, strategies
+
+    strategies.append('Moving Average Lines')
+
+    df['MA3'] = df.Close.rolling(window=3).mean()
+    df['MA5'] = df.Close.rolling(window=5).mean()
+    df['MA10'] = df.Close.rolling(window=10).mean()
+    df['MA20'] = df.Close.rolling(window=20).mean()
+    df['MA60'] = df.Close.rolling(window=60).mean()
+    df['MA120'] = df.Close.rolling(window=120).mean()
+    df['MA240'] = df.Close.rolling(window=240).mean()
+    df['VolChangePer'] = df.Volume.pct_change(1)
+
+    sell_counter = 0
+    buy, sell = [], []
+    for i in range(len(df.Close)):
+        if df.MA60.values[i] > df.MA20.values[i] and df.MA20.values[i] > df.MA10.values[i] and df.MA10.values[i] > df.MA5.values[i]:
+            buy.append(i)  
+        # elif len(buy) > len(sell): 
+        #     # The above statement shoulbe come before the statement in the next line
+        #     # because buy[sell_counter] causes an index error when sell_counter is 0.
+
+        #     if df.Close.values[i]/df.Close.values[buy[sell_counter]] - 1 >= 0.1:
+        #         sell.append(i)
+        #         sell_counter += 1
+    
+
+    # sell is filled with entire index numbers of records
+    # This will make other strategies used together decide selling timing 
+    sell = [i for i in range(len(df.Close))]
+
+    return buy, sell    
+
+def MA_Line_Volume(): # Selling timing will be decided by other strategies used at the same time
+    global df, strategies
+
+    strategies.append('Moving Average Lines with Volume')
+
+    df['MA3'] = df.Close.rolling(window=3).mean()
+    df['MA5'] = df.Close.rolling(window=5).mean()
+    df['MA10'] = df.Close.rolling(window=10).mean()
+    df['MA20'] = df.Close.rolling(window=20).mean()
+    df['MA60'] = df.Close.rolling(window=60).mean()
+    df['MA120'] = df.Close.rolling(window=120).mean()
+    df['MA240'] = df.Close.rolling(window=240).mean()
+    df['VolChangePer'] = df.Volume.pct_change(1)
+
+    sell_counter = 0
+    buy, sell = [], []
+    for i in range(len(df.Close)):
+        if df.MA60.values[i] > df.MA20.values[i] and df.MA20.values[i] > df.MA10.values[i] and df.MA10.values[i] > df.MA5.values[i]:
+            if df.Open.values[i] >= df.MA3.values[i] and df.VolChangePer.values[i] >= 0.4:
+                buy.append(i)  
+        elif len(buy) > len(sell):
+            if df.Close.values[i]/df.Close.values[buy[sell_counter]] - 1 >= 0.1:
+                sell.append(i)
+                sell_counter += 1
+    
+    return buy, sell
+
 
 def MACD():
     global df, strategies
@@ -260,11 +328,20 @@ def order_easy(strategies, shares):
 # order_easy([Bollinger(), MFI(), RSI()], 20)
 # order_easy([MFI(), RSI()], 20)
 # order_easy([Bollinger(), RSI()], 20)
-# order_easy([MACD()], 20)
+order_easy([MACD()], 20)
 # order_easy([Bollinger(), MFI(), RSI(), MACD()], 20)
 # order_easy([Bollinger(), MACD()], 20)
 # order_easy([MFI(), MACD()], 20)
 # order_easy([RSI(), MACD()], 20)
-order_easy([Bollinger(), RSI(), MACD()], 20)
-order_easy([Volume_RSI()], 20)
-order_easy([RSI(), Volume_RSI()], 20)
+# order_easy([Bollinger(), RSI(), MACD()], 20)
+# order_easy([Volume_RSI()], 20)
+# order_easy([RSI(), Volume_RSI()], 20)
+order_easy([MFI()], 20)
+order_easy([MA_Line(), MFI()], 20)
+order_easy([MFI(), MA_Line_Volume()], 20)
+# order_easy([MA_Line(), Bollinger()], 20)
+order_easy([MACD(), MA_Line_Volume()], 20)
+# order_easy([MACD(), MA_Line()], 20)
+order_easy([MA_Line(), MFI(), Bollinger()], 20)
+order_easy([MA_Line_Volume()], 20)
+
