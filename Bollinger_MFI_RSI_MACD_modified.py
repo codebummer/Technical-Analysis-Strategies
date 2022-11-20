@@ -2,12 +2,20 @@ import pandas_datareader.data as web
 import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
+import sqlite3
+
+
+file = sqlite3.connect(r'D:\myprojects\TradingDB\900310_Tick.db')
+# To read from sql by pandas you have to include the table name with square brackets
+df = pd.read_sql('SELECT * FROM [900310_Tick]', file) 
+# Rename the columns
+df.columns = ['Index', 'Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'Amount']
 
 # start = datetime(2012, 4, 1)
 # end = datetime(2016, 2, 5)
-start = datetime(2022, 1, 1)
-end = datetime(2022, 11, 11)
-df = web.DataReader('005930.KS', 'yahoo', start, end)
+# start = datetime(2022, 1, 1)
+# end = datetime(2022, 11, 11)
+# df = web.DataReader('005930.KS', 'yahoo', start, end)
 df_realtime = pd.DataFrame([])
 strategies = []
 
