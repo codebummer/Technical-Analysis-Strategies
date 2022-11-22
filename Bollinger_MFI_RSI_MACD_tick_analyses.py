@@ -17,7 +17,7 @@ df.drop(columns=['Date'], inplace=True)
 df.index = pd.to_datetime(df.index, format='%H%M%S')
 df.index = df.index.strftime('%H:%M:%S')
 df.index = pd.to_datetime(df.index)
-df[df.columns] = df[df.columns].apply(lambda x:x.astype('int'))
+df[df.columns] = df[df.columns].apply(lambda x:x.astype('float64'))
 
 
 df_realtime = pd.DataFrame([])
