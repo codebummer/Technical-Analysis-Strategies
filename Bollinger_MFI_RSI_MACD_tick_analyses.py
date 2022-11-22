@@ -19,6 +19,7 @@ df.index = df.index.strftime('%H:%M:%S')
 df.index = pd.to_datetime(df.index)
 df[df.columns] = df[df.columns].apply(lambda x:x.astype('int'))
 
+
 df_realtime = pd.DataFrame([])
 strategies = []
 
@@ -332,7 +333,7 @@ def order_easy(strategies, shares):
 # strategies should be input in the form of a list for order_easy
 # or, order_easy will think the second strategy as the share nunmer
 
-order_easy([Bollinger(), MFI()], 20)
+# order_easy([Bollinger(), MFI()], 20)
 # order_easy([Bollinger()], 20)
 # order_easy([MFI()], 20)
 # order_easy([RSI()], 20)
@@ -350,9 +351,18 @@ order_easy([Bollinger(), MFI()], 20)
 # order_easy([MFI()], 20)
 # order_easy([MA_Line(), MFI()], 20)
 order_easy([MFI(), MA_Line_Volume()], 20)
-order_easy([MA_Line(), Bollinger()], 20)
+# order_easy([MA_Line(), Bollinger()], 20)
 # order_easy([MACD(), MA_Line_Volume()], 20)
 # order_easy([MACD(), MA_Line()], 20)
 # order_easy([MA_Line(), MFI(), Bollinger()], 20)
 # order_easy([MA_Line_Volume()], 20)
 
+pear_corr = df.corr(method='pearson')
+linedup = pear_corr.stack().sort_values(ascending=False)
+linedup = linedup[[linedup[i] != 1 for i in range(len(linedup))]]
+linedup[[0, -1]]
+
+pear_corr.style.background_gradient(cmap='Green', axis=0)
+
+pd.plotting.scatter_matrix(df, figsize=(20,20))
+plt.show()
