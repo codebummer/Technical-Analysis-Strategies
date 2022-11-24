@@ -24,7 +24,7 @@ df = df.astype('float64')
 df_realtime = pd.DataFrame([])
 strategies = []
 
-
+totalmoney = 0 
 mfi_df = pd.DataFrame([])
 BUY_REALTIME, SELL_REALTIME = 0, 0
 orders_realtime = pd.DataFrame([])
@@ -249,27 +249,30 @@ def common_orderID(*orderIDs_for_all): #returns common buy and sell indices
         
     return find_common([i for sub in buy for i in sub]), find_common([i for sub in sell for i in sub])
 
-def make_order(orderID): 
+def make_order(orderID, shares): 
     #simulates buy and sell orders in a sequential time line
     #returns buy and sell index, considering no short order is possible
-    global df
+    global df, totalmoney
     BUY, SELL = 0, 0
     buy, sell = [], []
     orders_made = [[],[]]
+    investedmoney = 0
     
     if len(orderID) == 1:
         orderID = orderID[0]       
 
     for i in range(len(df.Close)):
-        if i in orderID[0]: #orderID[0]: a list of buy orders
+        if i in orderID[0] and totalmoney > investedmoney: #orderID[0]: a list of buy orders
             BUY += 1
             buy.append(df.Close.values[i])
             orders_made[0].append(i)
+            investedmoney += df.Close[i] * shares
             # print(f'BUY  #{BUY} at {df.Close[i]}KRW')
         elif i in orderID[1] and BUY > SELL: # orderID[1]: a list of sell orders
             SELL += 1
             sell.append(df.Close.values[i])
             orders_made[1].append(i)
+            investedmoney -= df.Close[i] * shares
             # print(f'SELL #{SELL} at {df.Close[i]}KRW')
             
     return orders_made, buy, sell        
@@ -294,7 +297,7 @@ def calc_total_returns(shares):
     total_buy = eval.Buy.sum() * shares
     total_sell = eval.Sell.sum() * shares
     print(f'Strategies Implemented: {strategies}')
-    print(f'Total Investment: {total_buy:,}KRW, Total Returns: {total_sell-total_buy:,}KRW or {(total_sell/total_buy-1)*100:,.00f}%')
+    print(f'Total Money Transacted: {total_buy:,}KRW, Total Returns: {total_sell-total_buy:,}KRW or {(total_sell/total_buy-1)*100:,.0000}%')
 
 
 def visualize(orders_made):
@@ -317,13 +320,15 @@ def visualize(orders_made):
     strategies = []
 
 
-def order_easy(strategies, shares):
+def order_easy(strategies, money, shares):
+    global totalmoney
+    totalmoney = money
     if len(strategies) > 1:
         common_orders_ID = common_orderID(strategies)
-        orders_made = make_order(common_orders_ID)
+        orders_made = make_order(common_orders_ID, shares)
 
     else:
-        orders_made = make_order(strategies)
+        orders_made = make_order(strategies, shares)
 
     calc_returns(orders_made)
     calc_total_returns(shares)
@@ -334,36 +339,39 @@ def order_easy(strategies, shares):
 # strategies should be input in the form of a list for order_easy
 # or, order_easy will think the second strategy as the share nunmer
 
-# order_easy([Bollinger(), MFI()], 20)
-# order_easy([Bollinger()], 20)
-# order_easy([MFI()], 20)
-# order_easy([RSI()], 20)
-# order_easy([Bollinger(), MFI(), RSI()], 20)
-# order_easy([MFI(), RSI()], 20)
-# order_easy([Bollinger(), RSI()], 20)
-# order_easy([MACD()], 20)
-# order_easy([Bollinger(), MFI(), RSI(), MACD()], 20)
-# order_easy([Bollinger(), MACD()], 20)
-# order_easy([MFI(), MACD()], 20)
-# order_easy([RSI(), MACD()], 20)
-# order_easy([Bollinger(), RSI(), MACD()], 20)
-# order_easy([Volume_RSI()], 20)
-# order_easy([RSI(), Volume_RSI()], 20)
-# order_easy([MFI()], 20)
-# order_easy([MA_Line(), MFI()], 20)
-order_easy([MFI(), MA_Line_Volume()], 20)
-# order_easy([MA_Line(), Bollinger()], 20)
-# order_easy([MACD(), MA_Line_Volume()], 20)
-# order_easy([MACD(), MA_Line()], 20)
-# order_easy([MA_Line(), MFI(), Bollinger()], 20)
-# order_easy([MA_Line_Volume()], 20)
+# order_easy([Bollinger(), MFI()], 1_000_000, 10)
+# order_easy([Bollinger()], 1_000_000, 10)
+# order_easy([MFI()], 1_000_000, 10)
+# order_easy([RSI()], 1_000_000, 10)
+# order_easy([Bollinger(), MFI(), RSI()], 1_000_000, 10)
+# order_easy([MFI(), RSI()], 1_000_000, 10)
+# order_easy([Bollinger(), RSI()], 1_000_000, 10)
+# order_easy([MACD()], 1_000_000, 10)
+# order_easy([Bollinger(), MFI(), RSI(), MACD()], 1_000_000, 10)
+# order_easy([Bollinger(), MACD()], 1_000_000, 10)
+# order_easy([MFI(), MACD()], 1_000_000, 10)
+# order_easy([RSI(), MACD()], 1_000_000, 10)
+# order_easy([Bollinger(), RSI(), MACD()], 1_000_000, 10)
+# order_easy([Volume_RSI()], 1_000_000, 10)
+# order_easy([RSI(), Volume_RSI()], 1_000_000, 10)
+# order_easy([MFI()], 1_000_000, 10)
+# order_easy([MA_Line(), MFI()], 1_000_000, 10)
+# order_easy([MFI(), MA_Line_Volume()], 1_000_000, 10)
+# order_easy([MA_Line(), Bollinger()], 1_000_000, 10)
+# order_easy([MACD(), MA_Line_Volume()], 1_000_000, 10)
+# order_easy([MACD(), MA_Line()], 1_000_000, 10)
+# order_easy([MA_Line(), MFI(), Bollinger()], 1_000_000, 10)
+# order_easy([MA_Line_Volume()], 1_000_000, 10)
+# order_easy([Bollinger(), MA_Line()], 1_000_000, 10)
+# order_easy([Bollinger(), MA_Line(), MFI()], 1_000_000, 10)
+order_easy([Bollinger(), MA_Line(), MFI(), RSI()], 1_000_000, 10)
 
-pear_corr = df.corr(method='pearson')
-linedup = pear_corr.stack().sort_values(ascending=False)
-linedup = linedup[[linedup[i] != 1 for i in range(len(linedup))]]
-linedup[[0, -1]]
+# pear_corr = df.corr(method='pearson')
+# linedup = pear_corr.stack().sort_values(ascending=False)
+# linedup = linedup[[linedup[i] != 1 for i in range(len(linedup))]]
+# linedup[[0, -1]]
 
-pear_corr.style.background_gradient(cmap='Green', axis=0)
+# pear_corr.style.background_gradient(cmap='Green', axis=0)
 
-pd.plotting.scatter_matrix(df, figsize=(20,20))
-plt.show()
+# pd.plotting.scatter_matrix(df, figsize=(20,20))
+# plt.show()
