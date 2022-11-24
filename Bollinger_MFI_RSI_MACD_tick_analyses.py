@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 import sqlite3
 
 
-file = sqlite3.connect(r'D:\myprojects\TradingDB\2022-11-22\900310_주식체결.db')
-# To read from sql by pandas you have to include the table name with square brackets
-df = pd.read_sql('SELECT * FROM [주식체결]', file) 
+with sqlite3.connect(r'D:\myprojects\TradingDB\005930_주식체결.db') as file:
+    # To read from sql by pandas you have to include the table name with square brackets
+    df = pd.read_sql('SELECT * FROM [주식체결]', file) 
 # Rename the columns
 df = df[['체결시간', '시가', '고가', '저가', '현재가', '거래량']]
 df[df.columns] = df[df.columns].apply(lambda x:x.str.strip('-+'))
@@ -17,7 +17,8 @@ df.drop(columns=['Date'], inplace=True)
 df.index = pd.to_datetime(df.index, format='%H%M%S')
 df.index = df.index.strftime('%H:%M:%S')
 df.index = pd.to_datetime(df.index)
-df[df.columns] = df[df.columns].apply(lambda x:x.astype('float64'))
+# df[df.columns] = df[df.columns].apply(lambda x:x.astype('float64'))
+df = df.astype('float64')
 
 
 df_realtime = pd.DataFrame([])
