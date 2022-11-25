@@ -21,6 +21,7 @@ for ticker in tickers:
     with sqlite3.connect(ticker+'.db') as file:
         df.to_sql('Daily_Prices', file)
 
+#Reierate from here
 os.chdir(r'D:\myprojects\TradingDB\daily')
 filenames = os.listdir()
 screened_stocks = []
@@ -43,10 +44,8 @@ for ticker in filenames:
     df['VolChangePercent'] = df.Volume.pct_change(1)
 
     tricker_stripped = ticker.strip('.db')
-    if all(df.Bandwidth < 5) \
-        and all(-0.03 < df.CloseChangePercent < 0.03) \
-        and all(df.MA5 > df.MA10 > df.MA20 > df.MA60 > df.MA120) \
-        and any(df.VolChangePercent[-20:] > 0.3):
+    if all(df.Bandwidth < 10) and all(df.MA5 > df.MA10 > df.MA20 > df.MA60 > df.MA120) and any(df.VolChangePercent[-20:] > 0.3):          
+# and all(-0.03 < df.CloseChangePercent < 0.03) 
         screened_stocks.append(ticker)
         print(f'{tricker_stripped} selected')
     else:
@@ -57,5 +56,4 @@ screened_stocks = [stock.strip('.db') for stock in screened_stocks]
 os.chdir(r'D:\myprojects\TradingDB')
 with open('screened_stocks.txt', 'w') as file:
     file.write(str(screened_stocks))
-    print('Screen Results Saved in screened_stocks.txt')
-    
+    print(f'{len(screened_stocks)} stock(s) found. Screen results saved in screened_stocks.txt')
