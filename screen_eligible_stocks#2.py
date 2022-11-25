@@ -14,15 +14,15 @@ tickers = [ticker.strip(' \'[]\"') for ticker in tickers.split(',')]
 with open('stocklist.json') as file:
     ticker_stock = json.load(file)
 
-# #Download daily prices from NAVER
-# os.chdir(r'D:\myprojects\TradingDB\daily')
-# start = datetime(2021, 1, 1)
-# end = datetime.today()
-# for ticker in tickers:
-#     df = web.DataReader(ticker, 'naver', start, end)
-#     df = df.astype('float64')
-#     with sqlite3.connect(ticker+'.db') as file:
-#         df.to_sql('Daily_Prices', file)
+#Download daily prices from NAVER
+os.chdir(r'D:\myprojects\TradingDB\daily')
+start = datetime(2021, 1, 1)
+end = datetime.today()
+for ticker in tickers:
+    df = web.DataReader(ticker, 'naver', start, end)
+    df = df.astype('float64')
+    with sqlite3.connect(ticker+'.db') as file:
+        df.to_sql('Daily_Prices', file)
 
 #Reierate from here
 os.chdir(r'D:\myprojects\TradingDB\daily')
