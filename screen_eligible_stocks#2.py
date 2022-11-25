@@ -4,13 +4,15 @@ import numpy as np
 from datetime import datetime
 import matplotlib.pyplot as plt
 import sqlite3
-import os
+import os, json
 
 #Read all tickers
 os.chdir(r'D:\myprojects\TradingDB')
 with open('tickers.txt', 'r') as file:
     tickers = file.read()
 tickers = [ticker.strip(' \'[]\"') for ticker in tickers.split(',')]
+with open('stocklist.json') as file:
+    ticker_stock = json.load(file)
 
 #Download daily prices from NAVER
 os.chdir(r'D:\myprojects\TradingDB\daily')
@@ -25,7 +27,7 @@ for ticker in tickers:
 #Reierate from here
 os.chdir(r'D:\myprojects\TradingDB\daily')
 filenames = os.listdir()
-screened_stocks = []
+screened_tickers = []
 for ticker in filenames:
     with sqlite3.connect(ticker) as file:
         df = pd.read_sql('SELECT * FROM [Daily_Prices]', file)
@@ -52,14 +54,21 @@ for ticker in filenames:
     for ma in ma_compare:
         MA = MA and all(ma[0][PERIOD:] > ma[1][PERIOD:])
     if MA and all(df.Bandwidth[PERIOD+100] < 10) and any(df.VolChangePercent[PERIOD] > 0.3) and all(-0.03 < df.CloseChangePercent[PERIOD]) and all(df.CloseChangePercent[PERIOD] < 0.03):          
-        screened_stocks.append(ticker)
+        screened_tickers.append(ticker)
         print(f'{tricker_stripped} selected')
     else:
         print(f'{tricker_stripped} failed')
     
 
-screened_stocks = [stock.strip('.db') for stock in screened_stocks]
+screened_tickers = [stock.strip('.db') for stock in screened_tickers]
+screened_stocks = {}
+for ticker in screened_tickers:
+    screened_stocks[ticker] = ticker_stock['tickerkeys'][ticker]
+
 os.chdir(r'D:\myprojects\TradingDB')
-with open('screened_stocks.txt', 'w') as file:
-    file.write(str(screened_stocks))
-    print(f'{len(screened_stocks)} stock(s) found. Screen results saved in screened_stocks.txt')
+# with open('screened_stocks.txt', 'w') as file:
+#     file.write(str(screened_tickers))
+#     print(f'{len(screened_stocks)} stock(s) found. Screen results saved in screened_stocks.txt')
+with open('screened_stocks.json', 'w') as file:
+    json.dump(screened_stocks, file)
+    print(f'{len(screened_stocks.keys())} stock(s) found. Screen results saved in screened_stocks.json')
