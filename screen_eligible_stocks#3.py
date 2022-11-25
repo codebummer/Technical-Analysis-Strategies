@@ -14,35 +14,38 @@ path = r'D:\myprojects\TradingDB'
 if not os.path.exists(path):
     os.mkdir(path)
 os.chdir(path)
-app = QApplication(sys.argv)
-ocx = QAxWidget('KHOPENAPI.KHOpenAPICtrl.1')
-def login(errcode):
-    if errcode == 0:
-        print('Logged in successfully')
-    else:
-        raise Exception('Loggin failed')
-    logloop.quit()
-def stockcodes_receive(market=['0','10']):
-    codelist = ocx.dynamicCall('GetCodeListByMarket(QString)', market)
-    tickers = codelist.split(';')
-    stock_list = {'tickerkeys':{}, 'stockkeys':{}}
-    for ticker in tickers:
-        if ticker == '':
-            continue
+if not os.path.exists('stocklist.json'):        
+    app = QApplication(sys.argv)
+    ocx = QAxWidget('KHOPENAPI.KHOpenAPICtrl.1')
+    def login(errcode):
+        if errcode == 0:
+            print('Logged in successfully')
         else:
-            stock = ocx.dynamicCall('GetMasterCodeName(QString)', ticker)
-            stock_list['tickerkeys'][ticker] = stock
-            stock_list['stockkeys'][stock] = ticker
-    with open('stocklist.json', 'w') as file:
-        json.dump(stock_list, file)
-        print('The ticker-stock pair dictionary saved in stocklist.json under D:\myprojects\TradingDB')
-    return stock_list
+            raise Exception('Loggin failed')
+        logloop.quit()
+    def stockcodes_receive(market=['0','10']):
+        codelist = ocx.dynamicCall('GetCodeListByMarket(QString)', market)
+        tickers = codelist.split(';')
+        stock_list = {'tickerkeys':{}, 'stockkeys':{}}
+        for ticker in tickers:
+            if ticker == '':
+                continue
+            else:
+                stock = ocx.dynamicCall('GetMasterCodeName(QString)', ticker)
+                stock_list['tickerkeys'][ticker] = stock
+                stock_list['stockkeys'][stock] = ticker
+        with open('stocklist.json', 'w') as file:
+            json.dump(stock_list, file)
+            print('The ticker-stock pair dictionary saved in stocklist.json under D:\myprojects\TradingDB')
+        return stock_list
 
-ocx.OnEventConnect.connect(login)
-ocx.dynamicCall('CommConnect()')
-logloop = QEventLoop()
-logloop.exec_()
-ticker_stock = stockcodes_receive()
+    ocx.OnEventConnect.connect(login)
+    ocx.dynamicCall('CommConnect()')
+    logloop = QEventLoop()
+    logloop.exec_()
+    ticker_stock = stockcodes_receive()
+else:
+    ticker_stock = {}
 
 #Read all tickers
 path = r'D:\myprojects\TradingDB'
@@ -55,32 +58,35 @@ os.chdir(path)
 #     tickers = file.read()
 # tickers = [ticker.strip(' \'[]\"') for ticker in tickers.split(',')]
 
-# #The following two lines read a ticker-stock pair dictionary
-# #However, they are not used, because it is easier to use the dictionary data
-# #from the returned value from 'stockcodes_receive()'
-# with open('stocklist.json') as file:
-#     ticker_stock = json.load(file)
+#The following two lines read a ticker-stock pair dictionary
+#However, they are not used, because it is easier to use the dictionary data
+#from the returned value from 'stockcodes_receive()'
+if ticker_stock == {}:
+    with open('stocklist.json') as file:
+        ticker_stock = json.load(file)
 
 #Download daily prices from NAVER
 path = r'D:\myprojects\TradingDB\daily'
 if not os.path.exists(path):
     os.mkdir(path)
 os.chdir(path)
-start = datetime(2021, 1, 1)
-end = datetime.today()
-for ticker in ticker_stock['tickerkeys'].keys():
-    df = web.DataReader(ticker, 'naver', start, end)
-    df = df.astype('float64')
-    with sqlite3.connect(ticker+'.db') as file:
-        df.to_sql('Daily_Prices', file)
-        print(f'{ticker} saved under D:\myprojects\TradingDB\daily')
+filenames = os.listdir()
+if not filenames:
+    start = datetime(2021, 1, 1)
+    end = datetime.today()
+    for ticker in ticker_stock['tickerkeys'].keys():
+        df = web.DataReader(ticker, 'naver', start, end)
+        df = df.astype('float64')
+        with sqlite3.connect(ticker+'.db') as file:
+            df.to_sql('Daily_Prices', file)
+            print(f'{ticker} saved under D:\myprojects\TradingDB\daily')
 
 #Reierate from here
 path = r'D:\myprojects\TradingDB\daily'
 if not os.path.exists(path):
     os.mkdir(path)
 os.chdir(path)
-filenames = os.listdir()
+# filenames = os.listdir()
 screened_tickers = []
 for ticker in filenames:
     with sqlite3.connect(ticker) as file:
@@ -115,7 +121,11 @@ for ticker in filenames:
         CLOSECHANGE = CLOSECHANGE and -0.05 < (df.Close.values[idx]/df.Close.values[PERIOD] - 1) < 0.05
     
     ACCUMULATION = True
-    for idx in range(-20, 0):
+    if len(df) < 20:
+        start = -len(df)
+    else:
+        start = -20
+    for idx in range(start, 0):
         ACCUMULATION = ACCUMULATION and \
             df.VolChangePercent.values[idx] > 0.3 and 0 < df.CloseChangePercent.values[idx] < 0.01
     
