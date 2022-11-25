@@ -48,12 +48,16 @@ for ticker in filenames:
 
     tricker_stripped = ticker.strip('.db')
     PERIOD = -20
+
     MA = True
     mas = [df.MA5, df.MA10, df.MA20, df.MA60, df.MA120]
     ma_compare = [[mas[i], mas[i+1]] for i in range(len(mas)-1)]
     for ma in ma_compare:
         MA = MA and all(ma[0][PERIOD:] > ma[1][PERIOD:])
-    if MA and all(df.Bandwidth[PERIOD-100:] < 10) and any(df.VolChangePercent[PERIOD:] > 0.3) and all(-0.03 < df.CloseChangePercent[PERIOD:]) and all(df.CloseChangePercent[PERIOD:] < 0.03):          
+
+    CLOSECHANGE = all(-0.03 < df.CloseChangePercent[PERIOD:]) and all(df.CloseChangePercent[PERIOD:] < 0.03)
+    CLOSECHANGE = CLOSECHANGE and (df.Close.values[-1]/df.Close.values[PERIOD] - 1) < 0.03 
+    if MA and CLOSECHANGE and all(df.Bandwidth[PERIOD-100:] < 10) and any(df.VolChangePercent[PERIOD:] > 0.3):          
         screened_tickers.append(ticker)
         print(f'{tricker_stripped} selected')
     else:
