@@ -14,7 +14,7 @@ path = r'D:\myprojects\TradingDB'
 if not os.path.exists(path):
     os.mkdir(path)
 os.chdir(path)
-if not os.path.exists('stocklist.json'):        
+if not os.path.isfile('stocklist.json'):        
     app = QApplication(sys.argv)
     ocx = QAxWidget('KHOPENAPI.KHOpenAPICtrl.1')
     def login(errcode):
@@ -121,11 +121,10 @@ for ticker in filenames:
         CLOSECHANGE = CLOSECHANGE and -0.05 < (df.Close.values[idx]/df.Close.values[PERIOD] - 1) < 0.05
     
     ACCUMULATION = True
-    if len(df) < 20:
-        start = -len(df)
-    else:
-        start = -20
-    for idx in range(start, 0):
+    ACC_PERIOD = -5
+    if len(df) < -ACC_PERIOD:
+        ACC_PERIOD = -len(df)
+    for idx in range(ACC_PERIOD, 0):
         ACCUMULATION = ACCUMULATION and \
             df.VolChangePercent.values[idx] > 0.3 and 0 < df.CloseChangePercent.values[idx] < 0.01
     
