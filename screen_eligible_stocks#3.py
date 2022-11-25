@@ -1,31 +1,85 @@
+from PyQt5.QtWidgets import *
+from PyQt5.QAxContainer import *
+from PyQt5.QtCore import *
 import pandas_datareader.data as web
 import pandas as pd
 import numpy as np
 from datetime import datetime
 import matplotlib.pyplot as plt
 import sqlite3
-import os, json
+import os, sys, json
+
+#Download a ticker-stock pair dictionary
+path = r'D:\myprojects\TradingDB'
+if not os.path.exists(path):
+    os.mkdir(path)
+os.chdir(path)
+app = QApplication(sys.argv)
+ocx = QAxWidget('KHOPENAPI.KHOpenAPICtrl.1')
+def login(errcode):
+    if errcode == 0:
+        print('Logged in successfully')
+    else:
+        raise Exception('Loggin failed')
+    logloop.quit()
+def stockcodes_receive(market=['0','10']):
+    codelist = ocx.dynamicCall('GetCodeListByMarket(QString)', market)
+    tickers = codelist.split(';')
+    stock_list = {'tickerkeys':{}, 'stockkeys':{}}
+    for ticker in tickers:
+        if ticker == '':
+            continue
+        else:
+            stock = ocx.dynamicCall('GetMasterCodeName(QString)', ticker)
+            stock_list['tickerkeys'][ticker] = stock
+            stock_list['stockkeys'][stock] = ticker
+    with open('stocklist.json', 'w') as file:
+        json.dump(stock_list, file)
+        print('The ticker-stock pair dictionary saved in stocklist.json under D:\myprojects\TradingDB')
+    return stock_list
+
+ocx.OnEventConnect.connect(login)
+ocx.dynamicCall('CommConnect()')
+logloop = QEventLoop()
+logloop.exec_()
+ticker_stock = stockcodes_receive()
 
 #Read all tickers
-os.chdir(r'D:\myprojects\TradingDB')
-with open('tickers.txt', 'r') as file:
-    tickers = file.read()
-tickers = [ticker.strip(' \'[]\"') for ticker in tickers.split(',')]
-with open('stocklist.json') as file:
-    ticker_stock = json.load(file)
+path = r'D:\myprojects\TradingDB'
+if not os.path.exists(path):
+    os.mkdir(path)
+os.chdir(path)
+# #The following three lines read a ticker list from a text file. 
+# #However, a json file is read instead, because it is more convinient
+# with open('tickers.txt', 'r') as file:
+#     tickers = file.read()
+# tickers = [ticker.strip(' \'[]\"') for ticker in tickers.split(',')]
+
+# #The following two lines read a ticker-stock pair dictionary
+# #However, they are not used, because it is easier to use the dictionary data
+# #from the returned value from 'stockcodes_receive()'
+# with open('stocklist.json') as file:
+#     ticker_stock = json.load(file)
 
 #Download daily prices from NAVER
-os.chdir(r'D:\myprojects\TradingDB\daily')
+path = r'D:\myprojects\TradingDB\daily'
+if not os.path.exists(path):
+    os.mkdir(path)
+os.chdir(path)
 start = datetime(2021, 1, 1)
 end = datetime.today()
-for ticker in tickers:
+for ticker in ticker_stock['tickerkeys'].keys():
     df = web.DataReader(ticker, 'naver', start, end)
     df = df.astype('float64')
     with sqlite3.connect(ticker+'.db') as file:
         df.to_sql('Daily_Prices', file)
+        print(f'{ticker} saved under D:\myprojects\TradingDB\daily')
 
 #Reierate from here
-os.chdir(r'D:\myprojects\TradingDB\daily')
+path = r'D:\myprojects\TradingDB\daily'
+if not os.path.exists(path):
+    os.mkdir(path)
+os.chdir(path)
 filenames = os.listdir()
 screened_tickers = []
 for ticker in filenames:
@@ -49,6 +103,7 @@ for ticker in filenames:
     tricker_stripped = ticker.strip('.db')
     PERIOD = -200
 
+    # Conditions by which to screen stocks are created with bool variables which are all capitalized
     MA = True
     mas = [df.MA5, df.MA10, df.MA20, df.MA60, df.MA120]
     ma_compare = [[mas[i], mas[i+1]] for i in range(len(mas)-1)]
@@ -63,10 +118,11 @@ for ticker in filenames:
     for idx in range(-20, 0):
         ACCUMULATION = ACCUMULATION and \
             df.VolChangePercent.values[idx] > 0.3 and 0 < df.CloseChangePercent.values[idx] < 0.01
+    
+    BANDWIDTH = all(df.Bandwidth[PERIOD:] < 20)
                         
-    # if MA and CLOSECHANGE and all(df.Bandwidth[PERIOD-100:] < 10) and any(df.VolChangePercent[PERIOD:] > 0.3):          
-    if CLOSECHANGE and ACCUMULATION and all(df.Bandwidth[PERIOD:] < 20):          
-
+    # Add screen conditions to use in the following if statement          
+    if CLOSECHANGE and ACCUMULATION and BANDWIDTH:     
         screened_tickers.append(ticker)
         print(f'{tricker_stripped} selected')
     else:
@@ -78,7 +134,10 @@ screened_stocks = {}
 for ticker in screened_tickers:
     screened_stocks[ticker] = ticker_stock['tickerkeys'][ticker]
 
-os.chdir(r'D:\myprojects\TradingDB')
+path = r'D:\myprojects\TradingDB'
+if not os.path.exists(path):
+    os.mkdir(path)
+os.chdir(path)
 # with open('screened_stocks.txt', 'w') as file:
 #     file.write(str(screened_tickers))
 #     print(f'{len(screened_stocks)} stock(s) found. Screen results saved in screened_stocks.txt')
