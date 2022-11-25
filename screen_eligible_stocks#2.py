@@ -6,21 +6,21 @@ import matplotlib.pyplot as plt
 import sqlite3
 import os
 
-#Read all tickers
-os.chdir(r'D:\myprojects\TradingDB')
-with open('tickers.txt', 'r') as file:
-    tickers = file.read()
-tickers = [ticker.strip(' \'[]\"') for ticker in tickers.split(',')]
+# #Read all tickers
+# os.chdir(r'D:\myprojects\TradingDB')
+# with open('tickers.txt', 'r') as file:
+#     tickers = file.read()
+# tickers = [ticker.strip(' \'[]\"') for ticker in tickers.split(',')]
 
-#Download daily prices from NAVER
-os.chdir(r'D:\myprojects\TradingDB\daily')
-start = datetime(2021, 1, 1)
-end = datetime.today()
-for ticker in tickers:
-    df = web.DataReader(ticker, 'naver', start, end)
-    df = df.astype('float64')
-    with sqlite3.connect(ticker+'.db') as file:
-        df.to_sql('Daily_Prices', file)
+# #Download daily prices from NAVER
+# os.chdir(r'D:\myprojects\TradingDB\daily')
+# start = datetime(2021, 1, 1)
+# end = datetime.today()
+# for ticker in tickers:
+#     df = web.DataReader(ticker, 'naver', start, end)
+#     df = df.astype('float64')
+#     with sqlite3.connect(ticker+'.db') as file:
+#         df.to_sql('Daily_Prices', file)
 
 #Reierate from here
 os.chdir(r'D:\myprojects\TradingDB\daily')
@@ -51,7 +51,7 @@ for ticker in filenames:
     ma_compare = [[mas[i], mas[i+1]] for i in range(len(mas)-1)]
     for ma in ma_compare:
         MA = MA and all(ma[0][PERIOD:] > ma[1][PERIOD:])
-    if MA and all(df.Bandwidth[-100:] < 10) and any(df.VolChangePercent[-20:] > 0.3) and all(-0.03 < df.CloseChangePercent[-20:] < 0.03):          
+    if MA and all(df.Bandwidth[-100:] < 10) and any(df.VolChangePercent[-20:] > 0.3) and all(-0.03 < df.CloseChangePercent[-20:]) and all(df.CloseChangePercent[-20:] < 0.03):          
         screened_stocks.append(ticker)
         print(f'{tricker_stripped} selected')
     else:
