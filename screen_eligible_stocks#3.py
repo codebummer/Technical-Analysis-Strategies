@@ -152,4 +152,4 @@ os.chdir(path)
 #     print(f'{len(screened_stocks)} stock(s) found. Screen results saved in screened_stocks.txt')
 with open('screened_stocks.json', 'w') as file:
     json.dump(screened_stocks, file)
-    print(f'{len(screened_stocks.keys())} stock(s) found. Screen results saved in screened_stocks.json')
+    print(f'{len(screened_stocks.keys())} stock(s) found. Screen results saved in D:\myprojects\TradingDBscreened_stocks.json')
