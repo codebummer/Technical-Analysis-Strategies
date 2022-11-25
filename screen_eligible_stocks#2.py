@@ -14,15 +14,15 @@ tickers = [ticker.strip(' \'[]\"') for ticker in tickers.split(',')]
 with open('stocklist.json') as file:
     ticker_stock = json.load(file)
 
-#Download daily prices from NAVER
-os.chdir(r'D:\myprojects\TradingDB\daily')
-start = datetime(2021, 1, 1)
-end = datetime.today()
-for ticker in tickers:
-    df = web.DataReader(ticker, 'naver', start, end)
-    df = df.astype('float64')
-    with sqlite3.connect(ticker+'.db') as file:
-        df.to_sql('Daily_Prices', file)
+# #Download daily prices from NAVER
+# os.chdir(r'D:\myprojects\TradingDB\daily')
+# start = datetime(2021, 1, 1)
+# end = datetime.today()
+# for ticker in tickers:
+#     df = web.DataReader(ticker, 'naver', start, end)
+#     df = df.astype('float64')
+#     with sqlite3.connect(ticker+'.db') as file:
+#         df.to_sql('Daily_Prices', file)
 
 #Reierate from here
 os.chdir(r'D:\myprojects\TradingDB\daily')
@@ -53,7 +53,7 @@ for ticker in filenames:
     ma_compare = [[mas[i], mas[i+1]] for i in range(len(mas)-1)]
     for ma in ma_compare:
         MA = MA and all(ma[0][PERIOD:] > ma[1][PERIOD:])
-    if MA and all(df.Bandwidth[PERIOD+100] < 10) and any(df.VolChangePercent[PERIOD] > 0.3) and all(-0.03 < df.CloseChangePercent[PERIOD]) and all(df.CloseChangePercent[PERIOD] < 0.03):          
+    if MA and all(df.Bandwidth[PERIOD-100:] < 10) and any(df.VolChangePercent[PERIOD:] > 0.3) and all(-0.03 < df.CloseChangePercent[PERIOD:]) and all(df.CloseChangePercent[PERIOD:] < 0.03):          
         screened_tickers.append(ticker)
         print(f'{tricker_stripped} selected')
     else:
