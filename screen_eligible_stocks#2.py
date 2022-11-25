@@ -44,12 +44,11 @@ for ticker in filenames:
     df['CloseChangePercent'] = df.Close.pct_change(1)
     df['VolChangePercent'] = df.Volume.pct_change(1)
 
-
+    tricker_stripped = ticker.strip('.db')
     PERIOD = -20
     MA = True
     mas = [df.MA5, df.MA10, df.MA20, df.MA60, df.MA120]
     ma_compare = [[mas[i], mas[i+1]] for i in range(len(mas)-1)]
-    tricker_stripped = ticker.strip('.db')
     for ma in ma_compare:
         MA = MA and all(ma[0][PERIOD:] > ma[1][PERIOD:])
     if MA and all(df.Bandwidth[-100:] < 10) and any(df.VolChangePercent[-20:] > 0.3) and all(-0.03 < df.CloseChangePercent[-20:] < 0.03):          
