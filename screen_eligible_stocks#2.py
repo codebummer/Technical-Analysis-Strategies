@@ -57,7 +57,7 @@ for ticker in filenames:
 
     CLOSECHANGE = all(-0.03 < df.CloseChangePercent[PERIOD:]) and all(df.CloseChangePercent[PERIOD:] < 0.03)
     for idx in range(PERIOD, 0):
-        CLOSECHANGE = CLOSECHANGE and -0.03 < (df.Close.values[-1]/df.Close.values[idx] - 1) < 0.03
+        CLOSECHANGE = CLOSECHANGE and -0.03 < (df.Close.values[idx]/df.Close.values[PERIOD] - 1) < 0.03
     # if MA and CLOSECHANGE and all(df.Bandwidth[PERIOD-100:] < 10) and any(df.VolChangePercent[PERIOD:] > 0.3):          
     if CLOSECHANGE and all(df.Bandwidth[PERIOD:] < 20) and any(df.VolChangePercent[-20:] > 0.3):          
 
