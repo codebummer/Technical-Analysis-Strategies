@@ -107,7 +107,9 @@ for ticker in filenames:
     df['VolChangePercent'] = df.Volume.pct_change(1)
 
     tricker_stripped = ticker.strip('.db')
-    PERIOD = -200
+    PERIOD = -100
+    if len(df) < -PERIOD:
+        PERIOD = -len(df)
 
     # Conditions by which to screen stocks are created with bool variables which are all capitalized
     MA = True
@@ -116,22 +118,23 @@ for ticker in filenames:
     for ma in ma_compare:
         MA = MA and all(ma[0][PERIOD:] > ma[1][PERIOD:])
 
-    CLOSECHANGE = all(-0.03 < df.CloseChangePercent[PERIOD:]) and all(df.CloseChangePercent[PERIOD:] < 0.03)
+    DAILYCHANGE = all(-0.03 < df.CloseChangePercent[PERIOD:]) and all(df.CloseChangePercent[PERIOD:] < 0.03)
     for idx in range(PERIOD, 0):
-        CLOSECHANGE = CLOSECHANGE and -0.05 < (df.Close.values[idx]/df.Close.values[PERIOD] - 1) < 0.05
+        DAILYCHANGE = DAILYCHANGE and -0.05 < (df.Close.values[idx]/df.Close.values[PERIOD] - 1) < 0.05
     
     ACCUMULATION = True
-    ACC_PERIOD = -5
+    ACC_PERIOD = -10
     if len(df) < -ACC_PERIOD:
         ACC_PERIOD = -len(df)
     for idx in range(ACC_PERIOD, 0):
         ACCUMULATION = ACCUMULATION and \
-            df.VolChangePercent.values[idx] > 0.3 and 0 < df.CloseChangePercent.values[idx] < 0.01
+            df.VolChangePercent.values[idx] > 0.5 and 0 < df.CloseChangePercent.values[idx] < 0.02
     
     BANDWIDTH = all(df.Bandwidth[PERIOD:] < 20)
                         
     # Add screen conditions to use in the following if statement          
-    if CLOSECHANGE and ACCUMULATION and BANDWIDTH:     
+    # Available conditions are MA, DAILYCHANGE, ACCUMULATION, BANDWIDTH
+    if DAILYCHANGE and ACCUMULATION and BANDWIDTH:     
         screened_tickers.append(ticker)
         print(f'{tricker_stripped} selected')
     else:
