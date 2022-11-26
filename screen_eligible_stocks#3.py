@@ -119,8 +119,8 @@ for ticker in filenames:
         MA = MA and all(ma[0][-PERIOD:] > ma[1][-PERIOD:])
 
     DAILYCHANGE = True
-    DAILYCHANGERANGE = 0.03
-    MAXMINRANGE = 0.03
+    DAILYCHANGERANGE = 0.05
+    MAXMINRANGE = 0.05
     DAILYCHANGE = all(-DAILYCHANGERANGE < df.CloseChangePercent[-PERIOD:]) and all(df.CloseChangePercent[-PERIOD:] < DAILYCHANGERANGE)\
                 and -MAXMINRANGE < (df.Close.values[-PERIOD:].max()/df.Close.values[-PERIOD] - 1) < MAXMINRANGE\
                 and -MAXMINRANGE < (df.Close.values[-PERIOD:].min()/df.Close.values[-PERIOD] - 1) < MAXMINRANGE
@@ -139,10 +139,16 @@ for ticker in filenames:
     
     TRADEPERIOD = 20
     ISTRADE = any(df.Volume[-TRADEPERIOD:] != 0) # 'ISTRADE = not all(df.Volume[-TRADEPERIOD:] != 0)' is the same
-                        
-    # Add screen conditions to use in the following if statement          
+          
+    # Add screen conditions to use in the following CONDITIONS variable as a string.
+    # Use 'and' to connect multiple conditions shown below.          
     # Available conditions are MA, DAILYCHANGE, ACCUMULATION, BANDWIDTH, ISTRADE
-    if DAILYCHANGE and BANDWIDTH and ISTRADE:     
+    CONDITIONS = 'DAILYCHANGE and ISTRADE'
+    conditions_dict = {'MA':MA, 'DAILYCNAGE':DAILYCHANGE, 'ACCUMULATION':ACCUMULATION, 'BANDWIDTH':BANDWIDTH, 'ISTRADE':ISTRADE}   
+    CONDITIONS_PROCESSED = all([conditions_dict(con) for con in CONDITIONS.split(' and ')])
+    if ticker == filenames[0]:
+        print('Conditions are set for '+CONDITIONS)
+    if CONDITIONS_PROCESSED:     
         screened_tickers.append(ticker)
         print(f'{tricker_stripped} selected')
     else:
@@ -161,6 +167,7 @@ os.chdir(path)
 # with open('screened_stocks.txt', 'w') as file:
 #     file.write(str(screened_tickers))
 #     print(f'{len(screened_stocks)} stock(s) found. Screen results saved in screened_stocks.txt')
-with open('screened_stocks.json', 'w') as file:
+filename_combined = 'screened_stocks'+'_'+CONDITIONS+'.json'
+with open(filename_combined, 'w') as file:
     json.dump(screened_stocks, file)
-    print(f'{len(screened_stocks.keys())} stock(s) found. Screen results saved in D:\myprojects\TradingDBscreened_stocks.json')
+    print(f'{len(screened_stocks.keys())} stock(s) found. Screen results saved in D:\myprojects\TradingDB\{filename_combined}')
