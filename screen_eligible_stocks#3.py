@@ -118,23 +118,24 @@ for ticker in filenames:
     for ma in ma_compare:
         MA = MA and all(ma[0][PERIOD:] > ma[1][PERIOD:])
 
+    DAILYCHANGE = True
     DAILYCHANGE = all(-0.03 < df.CloseChangePercent[PERIOD:]) and all(df.CloseChangePercent[PERIOD:] < 0.03)
     for idx in range(PERIOD, 0):
         DAILYCHANGE = DAILYCHANGE and -0.05 < (df.Close.values[idx]/df.Close.values[PERIOD] - 1) < 0.05
     
     ACCUMULATION = True
-    ACC_PERIOD = -10
+    ACC_PERIOD = -5
     if len(df) < -ACC_PERIOD:
         ACC_PERIOD = -len(df)
     for idx in range(ACC_PERIOD, 0):
         ACCUMULATION = ACCUMULATION and \
-            df.VolChangePercent.values[idx] > 0.5 and 0 < df.CloseChangePercent.values[idx] < 0.02
+            df.VolChangePercent.values[idx] > 0.5 and 0 < df.CloseChangePercent.values[idx] < 0.03
     
     BANDWIDTH = all(df.Bandwidth[PERIOD:] < 20)
                         
     # Add screen conditions to use in the following if statement          
     # Available conditions are MA, DAILYCHANGE, ACCUMULATION, BANDWIDTH
-    if DAILYCHANGE and ACCUMULATION and BANDWIDTH:     
+    if DAILYCHANGE and BANDWIDTH:     
         screened_tickers.append(ticker)
         print(f'{tricker_stripped} selected')
     else:
