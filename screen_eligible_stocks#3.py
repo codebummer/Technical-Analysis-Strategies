@@ -136,10 +136,13 @@ for ticker in filenames:
             df.VolChangePercent.values[idx] > 0.5 and 0 < df.CloseChangePercent.values[idx] < 0.03
     
     BANDWIDTH = all(df.Bandwidth[-PERIOD:] < 20)
+    
+    TRADEPERIOD = 20
+    ISTRADE = any(df.Volume[-TRADEPERIOD:] == 0) # 'ISTRADE = not all(df.Volume[-TRADEPERIOD:] == 0)' is the same
                         
     # Add screen conditions to use in the following if statement          
-    # Available conditions are MA, DAILYCHANGE, ACCUMULATION, BANDWIDTH
-    if DAILYCHANGE and BANDWIDTH:     
+    # Available conditions are MA, DAILYCHANGE, ACCUMULATION, BANDWIDTH, ISTRADE
+    if DAILYCHANGE and BANDWIDTH and ISTRADE:     
         screened_tickers.append(ticker)
         print(f'{tricker_stripped} selected')
     else:
