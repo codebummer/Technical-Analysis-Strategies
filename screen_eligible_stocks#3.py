@@ -138,7 +138,7 @@ for ticker in filenames:
     BANDWIDTH = all(df.Bandwidth[-PERIOD:] < 20)
     
     TRADEPERIOD = 20
-    ISTRADE = any(df.Volume[-TRADEPERIOD:] == 0) # 'ISTRADE = not all(df.Volume[-TRADEPERIOD:] == 0)' is the same
+    ISTRADE = any(df.Volume[-TRADEPERIOD:] != 0) # 'ISTRADE = not all(df.Volume[-TRADEPERIOD:] != 0)' is the same
                         
     # Add screen conditions to use in the following if statement          
     # Available conditions are MA, DAILYCHANGE, ACCUMULATION, BANDWIDTH, ISTRADE
