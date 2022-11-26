@@ -1,0 +1,133 @@
+import math
+from sklearn.preprocessing import MinMaxScaler
+from keras.models import Sequential
+from keras.layers import Dense, LSTM
+import pandas as pd
+import numpy as np
+import sqlite3
+import os, sys, json 
+from datetime import datetime, timedelta
+
+path = r'D:\myprojects\TradingDB'
+os.chdir(path)
+with open('stocklist.json', 'r') as file:
+    ticker_stock = json.load(file)
+
+path = r'D:\myprojects\TradingDB\daily'
+if os.path.exists(path):
+    os.chdir(path)
+    filenames = os.listdir()
+else:
+    raise Exception('There is no daily price data')
+
+screened_stocks = {}   
+for filename in filenames:
+    ticker = filename.strip('.db')
+    with sqlite3.connect(filename) as file:
+        df = pd.read_sql('SELECT * FROM [Daily_Prices]', file)
+
+    df.index = df.Date
+    df.drop(columns=['Date'], inplace=True)
+    df.index = pd.to_datetime(df.index, format='%Y-%m-%d %H:%M:%S')
+    data = df.filter(['Close'])
+    dataset = data.values
+    #Get the number of rows to train the model on
+    training_data_len = math.ceil(len(dataset) * 0.8)
+    if len(dataset) < 60:
+        LEARNING_UNIT = math.ceil(len(dataset)-training_data_len)*0.1
+        TESTDATA_LENGTH = len(dataset) - training_data_len
+    else:
+        LEARNING_UNIT = 60
+        TESTDATA_LENGTH = 65
+
+    #Scale the data
+    scaler = MinMaxScaler(feature_range = (0, 1))
+    scaled_data = scaler.fit_transform(dataset)
+
+    #Create the training data set
+    #Create the scaled training data set
+    train_data = scaled_data[0 : training_data_len, :]
+    
+    #Split the data into x_train and y_train data sets
+    x_train = []
+    y_train = []
+
+    for i in range(LEARNING_UNIT, len(train_data)):
+        x_train.append(train_data[i-LEARNING_UNIT : i, 0]) # the last day data of indexed i is not included    
+        y_train.append(train_data[i, 0]) # the last day data of index i is included
+
+    #Convert the x_train and y_train to numpy arrays
+    x_train, y_train = np.array(x_train), np.array(y_train)
+
+    #Reshape the data
+    x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
+    # x_train.shape[0]: number of samples(rows)
+    # x_train.shape[1]: number of time stamps(columns)
+    # 1: number of features. ANN takes three dimentional values as inputs
+
+
+    #Build the LSTM model
+    model = Sequential()
+    model.add(LSTM(50, return_sequences = True, input_shape = (x_train.shape[1], 1))) #adding a LSTM layer (the first layer) to the model
+    model.add(LSTM(50, return_sequences = False))
+    model.add(Dense(25))
+    model.add(Dense(1))
+
+    #Compile the model
+    model.compile(optimizer = 'adam', loss = 'mean_squared_error')
+
+    #Train the model
+    model.fit(x_train, y_train, batch_size = 1, epochs = 6)
+
+    #Create the testing data set
+    #Create a new array containing scaled values from index 1543 to 2003
+    test_data = scaled_data[training_data_len - LEARNING_UNIT : , :]
+    # #Create the data sets x_test and y_test
+    # x_test = []
+    # y_test = dataset[training_data_len : , :] # the last day data of indexed i is included  
+    # for i in range(LEARNING_UNIT, len(test_data)):
+    #     x_test.append(test_data[i-LEARNING_UNIT:i, 0]) # the last day data of indexed i is not included  
+
+    # #Convert the data to a numpy array
+    # x_test = np.array(x_test)
+
+    # #Reshape the data
+    # x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
+
+    # #Get the models predicted price values
+    # predictions = model.predict(x_test)
+    # predictions = scaler.inverse_transform(predictions) #Inverse transform data
+
+    # #Get the root mean squared error(RMSE)
+    # rmse = np.sqrt(np.mean(predictions - y_test) ** 2)
+
+    # #Plot the data
+    # train = data[:training_data_len]
+    # valid = data[training_data_len:]
+    # valid['Predictions'] = predictions
+    # valid.Predictions = valid.Predictions.astype(int)
+    
+    #Calculate tomorrow prices including the past five days
+    x_recent = test_data[-TESTDATA_LENGTH:, :]
+    x_calc = []
+    for i in range(len(x_recent)-LEARNING_UNIT):
+        x_calc.append(x_recent[i:i+LEARNING_UNIT, 0])
+    x_calc.append(x_recent[-LEARNING_UNIT:, 0])
+    x_calc = np.array(x_calc)
+    x_calc = np.reshape(x_calc, (x_calc.shape[0], x_calc.shape[1], 1))
+    pred_next = model.predict(x_calc)
+    pred_next = scaler.inverse_transform(pred_next)
+    pred_next = np.reshape(pred_next, (6))
+    # pred_index = list(df.index[-5:])
+    # adding = df.index[-1]+timedelta(seconds=1)
+    # pred_index.append(adding)
+
+    if pred_next[-2] < pred_next[-1]:
+        screened_stocks[ticker] = ticker_stock['tickerkeys'][ticker]
+        print(f'{ticker} selected')
+    else:
+        print(f'{ticker} failed')
+
+with open('screened_stocks_RNN.json') as file:
+    json.dump(screened_stocks, file)
+    print(f'{len(screened_stocks.keys())} stock(s) found. Screen results saved in D:\myprojects\TradingDB\screened_stocks_RNN.json')        
