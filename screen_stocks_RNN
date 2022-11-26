@@ -124,11 +124,11 @@ for filename in filenames:
 
     if pred_next[-2] < pred_next[-1]:
         screened_stocks[ticker] = ticker_stock['tickerkeys'][ticker]
-        print(f'\n\n{ticker} selected')
+        print(f'\n\n{ticker} selected\n\n')
     else:
-        print(f'\n\n{ticker} failed')
+        print(f'\n\n{ticker} failed\n\n')
 
 with open('screened_stocks_RNN.json') as file:
     json.dump(screened_stocks, file)
-    print(f'\n\n{len(screened_stocks.keys())} stock(s) found. Screen results saved in D:\myprojects\TradingDB\screened_stocks_RNN.json')
+    print(f'{len(screened_stocks.keys())} stock(s) found. Screen results saved in D:\myprojects\TradingDB\screened_stocks_RNN.json')
         
