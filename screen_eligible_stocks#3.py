@@ -107,31 +107,35 @@ for ticker in filenames:
     df['VolChangePercent'] = df.Volume.pct_change(1)
 
     tricker_stripped = ticker.strip('.db')
-    PERIOD = -100
-    if len(df) < -PERIOD:
-        PERIOD = -len(df)
+    PERIOD = 100
+    if len(df) < PERIOD:
+        PERIOD = len(df)
 
     # Conditions by which to screen stocks are created with bool variables which are all capitalized
     MA = True
     mas = [df.MA5, df.MA10, df.MA20, df.MA60, df.MA120]
     ma_compare = [[mas[i], mas[i+1]] for i in range(len(mas)-1)]
     for ma in ma_compare:
-        MA = MA and all(ma[0][PERIOD:] > ma[1][PERIOD:])
+        MA = MA and all(ma[0][-PERIOD:] > ma[1][-PERIOD:])
 
     DAILYCHANGE = True
-    DAILYCHANGE = all(-0.03 < df.CloseChangePercent[PERIOD:]) and all(df.CloseChangePercent[PERIOD:] < 0.03)
-    for idx in range(PERIOD, 0):
-        DAILYCHANGE = DAILYCHANGE and -0.05 < (df.Close.values[idx]/df.Close.values[PERIOD] - 1) < 0.05
+    DAILYCHANGERANGE = 0.03
+    MAXMINRANGE = 0.05
+    DAILYCHANGE = all(-DAILYCHANGERANGE < df.CloseChangePercent[-PERIOD:]) and all(df.CloseChangePercent[-PERIOD:] < DAILYCHANGERANGE)\
+                and -MAXMINRANGE < (df.Close.values[-PERIOD:].max()/df.Close.values[-PERIOD] - 1) < MAXMINRANGE\
+                and -MAXMINRANGE < (df.Close.values[-PERIOD:].min()/df.Close.values[-PERIOD] - 1) < MAXMINRANGE
+    for idx in range(-PERIOD, 0):
+        DAILYCHANGE = DAILYCHANGE and -MAXMINRANGE < (df.Close.values[idx]/df.Close.values[-PERIOD] - 1) < MAXMINRANGE 
     
     ACCUMULATION = True
-    ACC_PERIOD = -5
-    if len(df) < -ACC_PERIOD:
-        ACC_PERIOD = -len(df)
-    for idx in range(ACC_PERIOD, 0):
+    ACC_PERIOD = 5
+    if len(df) < ACC_PERIOD:
+        ACC_PERIOD = len(df)
+    for idx in range(-ACC_PERIOD, 0):
         ACCUMULATION = ACCUMULATION and \
             df.VolChangePercent.values[idx] > 0.5 and 0 < df.CloseChangePercent.values[idx] < 0.03
     
-    BANDWIDTH = all(df.Bandwidth[PERIOD:] < 20)
+    BANDWIDTH = all(df.Bandwidth[-PERIOD:] < 20)
                         
     # Add screen conditions to use in the following if statement          
     # Available conditions are MA, DAILYCHANGE, ACCUMULATION, BANDWIDTH
