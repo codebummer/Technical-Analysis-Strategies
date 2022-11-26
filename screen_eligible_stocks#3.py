@@ -144,8 +144,8 @@ for ticker in filenames:
     # Use 'and' to connect multiple conditions shown below.          
     # Available conditions are MA, DAILYCHANGE, ACCUMULATION, BANDWIDTH, ISTRADE
     CONDITIONS = 'DAILYCHANGE and ISTRADE'
-    conditions_dict = {'MA':MA, 'DAILYCNAGE':DAILYCHANGE, 'ACCUMULATION':ACCUMULATION, 'BANDWIDTH':BANDWIDTH, 'ISTRADE':ISTRADE}   
-    CONDITIONS_PROCESSED = all([conditions_dict(con) for con in CONDITIONS.split(' and ')])
+    conditions_dict = {'MA':MA, 'DAILYCHANGE':DAILYCHANGE, 'ACCUMULATION':ACCUMULATION, 'BANDWIDTH':BANDWIDTH, 'ISTRADE':ISTRADE}   
+    CONDITIONS_PROCESSED = all([conditions_dict[con] for con in CONDITIONS.split(' and ')])
     if ticker == filenames[0]:
         print('Conditions are set for '+CONDITIONS)
     if CONDITIONS_PROCESSED:     
