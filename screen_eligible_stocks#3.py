@@ -120,7 +120,7 @@ for ticker in filenames:
 
     DAILYCHANGE = True
     DAILYCHANGERANGE = 0.03
-    MAXMINRANGE = 0.05
+    MAXMINRANGE = 0.03
     DAILYCHANGE = all(-DAILYCHANGERANGE < df.CloseChangePercent[-PERIOD:]) and all(df.CloseChangePercent[-PERIOD:] < DAILYCHANGERANGE)\
                 and -MAXMINRANGE < (df.Close.values[-PERIOD:].max()/df.Close.values[-PERIOD] - 1) < MAXMINRANGE\
                 and -MAXMINRANGE < (df.Close.values[-PERIOD:].min()/df.Close.values[-PERIOD] - 1) < MAXMINRANGE
