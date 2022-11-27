@@ -7,7 +7,7 @@ import numpy as np
 from datetime import datetime
 import matplotlib.pyplot as plt
 import sqlite3
-import os, sys, json
+import os, sys, json, re
 
 #Global variables
 ticker_stock = {}
@@ -20,7 +20,8 @@ def get_stocklist():
     if not os.path.exists(path):
         os.mkdir(path)
     os.chdir(path)
-    if not os.path.isfile('stocklist.json'):   
+    if not os.path.isfile('stocklist.json'):  
+        print('\n\nStock list does not exist. Initiating download.') 
         app = QApplication(sys.argv)
         ocx = QAxWidget('KHOPENAPI.KHOpenAPICtrl.1')
         def login(errcode):
@@ -42,7 +43,7 @@ def get_stocklist():
                     stock_list['stockkeys'][stock] = ticker
             with open('stocklist.json', 'w') as file:
                 json.dump(stock_list, file)
-                print('The ticker-stock pair dictionary saved in stocklist.json under D:\myprojects\TradingDB')
+                print('\nThe ticker-stock pair dictionary saved in stocklist.json under D:\myprojects\TradingDB')
             return stock_list
 
         ocx.OnEventConnect.connect(login)
@@ -53,15 +54,28 @@ def get_stocklist():
     else:
         with open('stocklist.json') as file:
             ticker_stock = json.load(file)
+        print('\n\nStock list already exists. List download will not be implemented.')
 
 #Download daily prices from NAVER
 def get_dailydata():
+    global ticker_stock, all_df
     path = r'D:\myprojects\TradingDB\daily'
     if not os.path.exists(path):
         os.mkdir(path)
     os.chdir(path)
     filenames = os.listdir()
-    if os.listdir()
+    found = []
+    for filename in filenames:
+        add = re.findall('daily_[0-9]*.db', filename)
+        if add:
+            found.append(add[0])       
+    if found:
+        print('\nDaily data already exists. Reading daily data from the existing file.')
+        with sqlite3.connect(found[-1]) as file:
+            all_df = pd.read_sql('SELECT * FROM [Daily_Prices]', file)                
+        return
+
+    print('\nImplementing daily data download')
     start = datetime(2021, 1, 1)
     end = datetime.today()
     for ticker in ticker_stock['tickerkeys'].keys():
@@ -70,27 +84,30 @@ def get_dailydata():
         all_df[ticker] = df
         stock = ticker_stock['tickerkeys'][ticker]
         print(f'{ticker}, {stock} downloaded')
-    print('\n\nDownload Completed')
+    print('\nDownload Completed')
 
     while True:
-        save = input('Do you want to save the downloaded daily data in the disk? Caution: The size can be big. Please answer (1 for Yes/2 for No): ')
+        save = input('\nDo you want to save the data? (Yes: 1 , No: 2) ')
         if save == '1':
-            df_name = 'daily'+datetime.today()+'.db'
+            df_name = 'daily'+'_'+str(datetime.today().strftime('%Y%m%d'))+'.db'
             with sqlite3.connect(df_name) as file:
                 all_df.to_sql('Daily_Prices', file)
-                print(f'Daily market data saved in D:\myprojects\TradingDB\daily\{df_name}')
+                print(f'\nDaily market data saved in D:\myprojects\TradingDB\daily\{df_name}')
         elif save == '2':
             break
         else:
-            'You gave a wrong answer which is not an option. Please choose between 1 and 2'
+            '\nPlease choose between 1 and 2'
 
 #Reierate from here
 def screen_stocks(conditions):
+    global ticker_stock, all_df
     path = r'D:\myprojects\TradingDB\daily'
     if not os.path.exists(path):
         os.mkdir(path)
     os.chdir(path)
-    # filenames = os.listdir()
+
+    print('\nInitiating screening processes.\n')
+
     screened_tickers = []
     for ticker in all_df.keys():
         stock = ticker_stock['tickerkeys'][ticker]
@@ -147,7 +164,8 @@ def screen_stocks(conditions):
         # Add screen conditions to use in the following CONDITIONS variable as a string.
         # Use 'and' to connect multiple conditions shown below.          
         # Available conditions are MA, DAILYCHANGE, ACCUMULATION, BANDWIDTH, ISTRADE
-        CONDITIONS = 'ACCUMULATION and ISTRADE'
+
+        CONDITIONS = conditions
         conditions_dict = {'MA':MA, 'DAILYCHANGE':DAILYCHANGE, 'ACCUMULATION':ACCUMULATION, 'BANDWIDTH':BANDWIDTH, 'ISTRADE':ISTRADE}   
         CONDITIONS_PROCESSED = all([conditions_dict[con] for con in CONDITIONS.split(' and ')])
         # if ticker == filenames[0]:
@@ -167,19 +185,28 @@ def screen_stocks(conditions):
     for ticker in screened_tickers:
         screened_stocks[ticker] = ticker_stock['tickerkeys'][ticker]
 
-def save_results():
+    return screened_stocks
+
+def save_results(conditions, screened_stocks):
     path = r'D:\myprojects\TradingDB'
     if not os.path.exists(path):
         os.mkdir(path)
     os.chdir(path)
-    # with open('screened_stocks.txt', 'w') as file:
-    #     file.write(str(screened_tickers))
-    #     print(f'{len(screened_stocks)} stock(s) found. Screen results saved in screened_stocks.txt')
-    filename_combined = 'screened_stocks'+'_'+CONDITIONS+'.json'
+
+    filename_combined = 'screened_stocks'+'_'+conditions+'.json'
     with open(filename_combined, 'w') as file:
         json.dump(screened_stocks, file)
         print(f'{len(screened_stocks.keys())} stock(s) found. Screen results saved in D:\myprojects\TradingDB\{filename_combined}')
 
 def screen_easy(conditions):
-    
+    get_stocklist()
+    get_dailydata()
+    screened_stocks = screen_stocks(conditions)
+    save_results(conditions, screened_stocks)
+
+# Add screen conditions to use in the 'screen_easy' function as a string.
+# Use 'and' to connect multiple conditions shown below.          
+# Available conditions are MA, DAILYCHANGE, ACCUMULATION, BANDWIDTH, ISTRADE
+# ie. screen_easy('MA, DAILYCHANGE, ACCUMULATION, BANDWIDTH, ISTRADE')
+screen_easy('ACCUMULATION and ISTRADE')
     
