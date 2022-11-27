@@ -72,7 +72,10 @@ def get_dailydata():
     if found:
         print('\nDaily data already exists. Reading daily data from the existing file.')
         with sqlite3.connect(found[-1]) as file:
-            all_df = pd.read_sql('SELECT * FROM [Daily_Prices]', file)                
+            for ticker in ticker_stock['tickerkeys'].keys():
+                stock = ticker_stock['tickerkeys'][ticker]
+                all_df[ticker] = [pd.read_sql(f'SELECT * FROM [Daily_Prices_{ticker}]', file)]  
+                print(f'{ticker}, {stock} read')              
         return
 
     print('\nImplementing daily data download')
@@ -89,10 +92,15 @@ def get_dailydata():
     while True:
         save = input('\nDo you want to save the data? (Yes: 1 , No: 2) ')
         if save == '1':
+            print('\nSaving the daily market data.')
             df_name = 'daily'+'_'+str(datetime.today().strftime('%Y%m%d'))+'.db'
             with sqlite3.connect(df_name) as file:
-                pd.DataFrame(all_df).to_sql('Daily_Prices', file)
-                print(f'\nDaily market data saved in D:\myprojects\TradingDB\daily\{df_name}')
+                for ticker in ticker_stock['tickerkeys'].keys():
+                    stock = ticker_stock['tickerkeys'][ticker]
+                    pd.DataFrame(all_df[ticker][0]).to_sql('Daily_Prices'+'_'+ticker, file)
+                    print(f'{ticker}, {stock} saved')
+            print(f'\nDaily market data completed. All data saved in D:\myprojects\TradingDB\daily\{df_name}')
+            break
         elif save == '2':
             break
         else:
