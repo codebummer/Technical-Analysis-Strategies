@@ -84,6 +84,8 @@ if not filenames:
         # with sqlite3.connect(ticker+'.db') as file:
         #     df.to_sql('Daily_Prices', file)
         #     print(f'{ticker} saved under D:\myprojects\TradingDB\daily')
+    print('\n\nDownload Completed')
+
 
 #Reierate from here
 path = r'D:\myprojects\TradingDB\daily'
