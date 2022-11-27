@@ -1,0 +1,185 @@
+# from PyQt5.QtWidgets import *
+# from PyQt5.QAxContainer import *
+# from PyQt5.QtCore import *
+import pandas_datareader.data as web
+import pandas as pd
+import numpy as np
+from datetime import datetime
+import matplotlib.pyplot as plt
+import sqlite3
+import os, sys, json
+
+#Global variables
+ticker_stock = {}
+all_df = {}
+
+#Download or read, if it already exists, a ticker-stock pair dictionary
+def get_stocklist():   
+    global ticker_stock
+    path = r'D:\myprojects\TradingDB'
+    if not os.path.exists(path):
+        os.mkdir(path)
+    os.chdir(path)
+    if not os.path.isfile('stocklist.json'):   
+        app = QApplication(sys.argv)
+        ocx = QAxWidget('KHOPENAPI.KHOpenAPICtrl.1')
+        def login(errcode):
+            if errcode == 0:
+                print('Logged in successfully')
+            else:
+                raise Exception('Loggin failed')
+            logloop.quit()
+        def stockcodes_receive(market=['0','10']):
+            codelist = ocx.dynamicCall('GetCodeListByMarket(QString)', market)
+            tickers = codelist.split(';')
+            stock_list = {'tickerkeys':{}, 'stockkeys':{}}
+            for ticker in tickers:
+                if ticker == '':
+                    continue
+                else:
+                    stock = ocx.dynamicCall('GetMasterCodeName(QString)', ticker)
+                    stock_list['tickerkeys'][ticker] = stock
+                    stock_list['stockkeys'][stock] = ticker
+            with open('stocklist.json', 'w') as file:
+                json.dump(stock_list, file)
+                print('The ticker-stock pair dictionary saved in stocklist.json under D:\myprojects\TradingDB')
+            return stock_list
+
+        ocx.OnEventConnect.connect(login)
+        ocx.dynamicCall('CommConnect()')
+        logloop = QEventLoop()
+        logloop.exec_()
+        ticker_stock = stockcodes_receive()
+    else:
+        with open('stocklist.json') as file:
+            ticker_stock = json.load(file)
+
+#Download daily prices from NAVER
+def get_dailydata():
+    path = r'D:\myprojects\TradingDB\daily'
+    if not os.path.exists(path):
+        os.mkdir(path)
+    os.chdir(path)
+    filenames = os.listdir()
+    if os.listdir()
+    start = datetime(2021, 1, 1)
+    end = datetime.today()
+    for ticker in ticker_stock['tickerkeys'].keys():
+        df = web.DataReader(ticker, 'naver', start, end)
+        df = df.astype('float64')
+        all_df[ticker] = df
+        stock = ticker_stock['tickerkeys'][ticker]
+        print(f'{ticker}, {stock} downloaded')
+    print('\n\nDownload Completed')
+
+    while True:
+        save = input('Do you want to save the downloaded daily data in the disk? Caution: The size can be big. Please answer (1 for Yes/2 for No): ')
+        if save == '1':
+            df_name = 'daily'+datetime.today()+'.db'
+            with sqlite3.connect(df_name) as file:
+                all_df.to_sql('Daily_Prices', file)
+                print(f'Daily market data saved in D:\myprojects\TradingDB\daily\{df_name}')
+        elif save == '2':
+            break
+        else:
+            'You gave a wrong answer which is not an option. Please choose between 1 and 2'
+
+#Reierate from here
+def screen_stocks(conditions):
+    path = r'D:\myprojects\TradingDB\daily'
+    if not os.path.exists(path):
+        os.mkdir(path)
+    os.chdir(path)
+    # filenames = os.listdir()
+    screened_tickers = []
+    for ticker in all_df.keys():
+        stock = ticker_stock['tickerkeys'][ticker]
+        df = all_df[ticker]
+        
+        df['MA5'] = df.Close.rolling(window=5).mean()
+        df['MA10'] = df.Close.rolling(window=10).mean()
+        df['MA20'] = df.Close.rolling(window=20).mean()
+        df['MA60'] = df.Close.rolling(window=60).mean()
+        df['MA120'] = df.Close.rolling(window=120).mean()
+        df['STD'] = df.Close.rolling(window=20).std()
+        df['Upper'] = df.MA20 + 2 * df.STD
+        df['Lower'] = df.MA20 - 2 * df.STD
+        df['PB'] = (df.Close - df.Lower) / (df.Upper - df.Lower)
+        df['Bandwidth'] = (df.Upper - df.Lower) / df.MA20 * 100
+        df['Diff'] = df.Close.diff(1)
+        df['CloseChangePercent'] = df.Close.pct_change(1)
+        df['VolChangePercent'] = df.Volume.pct_change(1)
+
+
+        PERIOD = 100
+        if len(df) < PERIOD:
+            PERIOD = len(df)
+
+        # Conditions by which to screen stocks are created with bool variables which are all capitalized
+        MA = True
+        mas = [df.MA5, df.MA10, df.MA20, df.MA60, df.MA120]
+        ma_compare = [[mas[i], mas[i+1]] for i in range(len(mas)-1)]
+        for ma in ma_compare:
+            MA = MA and all(ma[0][-PERIOD:] > ma[1][-PERIOD:])
+
+        DAILYCHANGE = True
+        DAILYCHANGERANGE = 0.05
+        MAXMINRANGE = 0.05
+        DAILYCHANGE = all(-DAILYCHANGERANGE < df.CloseChangePercent[-PERIOD:]) and all(df.CloseChangePercent[-PERIOD:] < DAILYCHANGERANGE)\
+                    and -MAXMINRANGE < (df.Close.values[-PERIOD:].max()/df.Close.values[-PERIOD] - 1) < MAXMINRANGE\
+                    and -MAXMINRANGE < (df.Close.values[-PERIOD:].min()/df.Close.values[-PERIOD] - 1) < MAXMINRANGE
+        for idx in range(-PERIOD, 0):
+            DAILYCHANGE = DAILYCHANGE and -MAXMINRANGE < (df.Close.values[idx]/df.Close.values[-PERIOD] - 1) < MAXMINRANGE 
+        
+        ACCUMULATION = True
+        ACC_PERIOD = 5
+        if len(df) < ACC_PERIOD:
+            ACC_PERIOD = len(df)
+        for idx in range(-ACC_PERIOD, 0):
+            ACCUMULATION = ACCUMULATION and \
+                df.VolChangePercent.values[idx] > 0.3 and 0 < df.CloseChangePercent.values[idx] < 0.025
+        
+        BANDWIDTH = all(df.Bandwidth[-PERIOD:] < 20)
+        
+        TRADEPERIOD = 20
+        ISTRADE = any(df.Volume[-TRADEPERIOD:] != 0) # 'ISTRADE = not all(df.Volume[-TRADEPERIOD:] != 0)' is the same
+            
+        # Add screen conditions to use in the following CONDITIONS variable as a string.
+        # Use 'and' to connect multiple conditions shown below.          
+        # Available conditions are MA, DAILYCHANGE, ACCUMULATION, BANDWIDTH, ISTRADE
+        CONDITIONS = 'ACCUMULATION and ISTRADE'
+        conditions_dict = {'MA':MA, 'DAILYCHANGE':DAILYCHANGE, 'ACCUMULATION':ACCUMULATION, 'BANDWIDTH':BANDWIDTH, 'ISTRADE':ISTRADE}   
+        CONDITIONS_PROCESSED = all([conditions_dict[con] for con in CONDITIONS.split(' and ')])
+        # if ticker == filenames[0]:
+        if ticker == list(all_df.keys())[0]:
+            print('Conditions are set for '+CONDITIONS)
+        if CONDITIONS_PROCESSED:     
+            screened_tickers.append(ticker)
+            # print(f'{ticker_stripped}, {stock} selected')        
+            print(f'{ticker}, {stock} selected')
+        else:
+            # print(f'{ticker_stripped}, {stock} failed')
+            print(f'{ticker}, {stock} failed')    
+    print('\n\nScreen completed')
+
+    # screened_tickers = [stock.strip('.db') for stock in screened_tickers]
+    screened_stocks = {}
+    for ticker in screened_tickers:
+        screened_stocks[ticker] = ticker_stock['tickerkeys'][ticker]
+
+def save_results():
+    path = r'D:\myprojects\TradingDB'
+    if not os.path.exists(path):
+        os.mkdir(path)
+    os.chdir(path)
+    # with open('screened_stocks.txt', 'w') as file:
+    #     file.write(str(screened_tickers))
+    #     print(f'{len(screened_stocks)} stock(s) found. Screen results saved in screened_stocks.txt')
+    filename_combined = 'screened_stocks'+'_'+CONDITIONS+'.json'
+    with open(filename_combined, 'w') as file:
+        json.dump(screened_stocks, file)
+        print(f'{len(screened_stocks.keys())} stock(s) found. Screen results saved in D:\myprojects\TradingDB\{filename_combined}')
+
+def screen_easy(conditions):
+    
+    
