@@ -79,6 +79,8 @@ if not filenames:
         df = web.DataReader(ticker, 'naver', start, end)
         df = df.astype('float64')
         all_df[ticker] = df
+        stock = ticker_stock['tickerkeys'][ticker]
+        print(f'{ticker, stock} downloaded')
         # with sqlite3.connect(ticker+'.db') as file:
         #     df.to_sql('Daily_Prices', file)
         #     print(f'{ticker} saved under D:\myprojects\TradingDB\daily')
