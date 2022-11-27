@@ -81,7 +81,7 @@ def get_dailydata():
     for ticker in ticker_stock['tickerkeys'].keys():
         df = web.DataReader(ticker, 'naver', start, end)
         df = df.astype('float64')
-        all_df[ticker] = df
+        all_df[ticker] = [df]
         stock = ticker_stock['tickerkeys'][ticker]
         print(f'{ticker}, {stock} downloaded')
     print('\nDownload Completed')
@@ -111,7 +111,7 @@ def screen_stocks(conditions):
     screened_tickers = []
     for ticker in all_df.keys():
         stock = ticker_stock['tickerkeys'][ticker]
-        df = all_df[ticker]
+        df = all_df[ticker][0]
         
         df['MA5'] = df.Close.rolling(window=5).mean()
         df['MA10'] = df.Close.rolling(window=10).mean()
