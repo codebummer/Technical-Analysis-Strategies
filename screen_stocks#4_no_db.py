@@ -156,7 +156,8 @@ for ticker in all_df.keys():
     CONDITIONS = 'ACCUMULATION and ISTRADE'
     conditions_dict = {'MA':MA, 'DAILYCHANGE':DAILYCHANGE, 'ACCUMULATION':ACCUMULATION, 'BANDWIDTH':BANDWIDTH, 'ISTRADE':ISTRADE}   
     CONDITIONS_PROCESSED = all([conditions_dict[con] for con in CONDITIONS.split(' and ')])
-    if ticker == filenames[0]:
+    # if ticker == filenames[0]:
+    if ticker == list(all_df.keys())[0]:
         print('Conditions are set for '+CONDITIONS)
     if CONDITIONS_PROCESSED:     
         screened_tickers.append(ticker)
@@ -165,6 +166,7 @@ for ticker in all_df.keys():
     else:
         # print(f'{ticker_stripped}, {stock} failed')
         print(f'{ticker}, {stock} failed')    
+print('\n\nScreen completed')
 
 # screened_tickers = [stock.strip('.db') for stock in screened_tickers]
 screened_stocks = {}
