@@ -161,10 +161,7 @@ def screen_stocks(conditions):
         TRADEPERIOD = 20
         ISTRADE = any(df.Volume[-TRADEPERIOD:] != 0) # 'ISTRADE = not all(df.Volume[-TRADEPERIOD:] != 0)' is the same
             
-        # Add screen conditions to use in the following CONDITIONS variable as a string.
-        # Use 'and' to connect multiple conditions shown below.          
-        # Available conditions are MA, DAILYCHANGE, ACCUMULATION, BANDWIDTH, ISTRADE
-
+            
         CONDITIONS = conditions
         conditions_dict = {'MA':MA, 'DAILYCHANGE':DAILYCHANGE, 'ACCUMULATION':ACCUMULATION, 'BANDWIDTH':BANDWIDTH, 'ISTRADE':ISTRADE}   
         CONDITIONS_PROCESSED = all([conditions_dict[con] for con in CONDITIONS.split(' and ')])
@@ -209,4 +206,3 @@ def screen_easy(conditions):
 # Available conditions are MA, DAILYCHANGE, ACCUMULATION, BANDWIDTH, ISTRADE
 # ie. screen_easy('MA, DAILYCHANGE, ACCUMULATION, BANDWIDTH, ISTRADE')
 screen_easy('ACCUMULATION and ISTRADE')
-    
