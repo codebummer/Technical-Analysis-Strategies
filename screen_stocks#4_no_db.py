@@ -70,22 +70,36 @@ path = r'D:\myprojects\TradingDB\daily'
 if not os.path.exists(path):
     os.mkdir(path)
 os.chdir(path)
-filenames = os.listdir()
+# filenames = os.listdir()
 all_df = {}
-if not filenames:
-    start = datetime(2021, 1, 1)
-    end = datetime.today()
-    for ticker in ticker_stock['tickerkeys'].keys():
-        df = web.DataReader(ticker, 'naver', start, end)
-        df = df.astype('float64')
-        all_df[ticker] = df
-        stock = ticker_stock['tickerkeys'][ticker]
-        print(f'{ticker}, {stock} downloaded')
-        # with sqlite3.connect(ticker+'.db') as file:
-        #     df.to_sql('Daily_Prices', file)
-        #     print(f'{ticker} saved under D:\myprojects\TradingDB\daily')
-    print('\n\nDownload Completed')
+# if not filenames:
+#     start = datetime(2021, 1, 1)
+#     end = datetime.today()
+#     for ticker in ticker_stock['tickerkeys'].keys():
+#         df = web.DataReader(ticker, 'naver', start, end)
+#         df = df.astype('float64')
+#         all_df[ticker] = df
+#         stock = ticker_stock['tickerkeys'][ticker]
+#         print(f'{ticker}, {stock} downloaded')
+#         # with sqlite3.connect(ticker+'.db') as file:
+#         #     df.to_sql('Daily_Prices', file)
+#         #     print(f'{ticker} saved under D:\myprojects\TradingDB\daily')
+#     print('\n\nDownload Completed')
+    
+start = datetime(2021, 1, 1)
+end = datetime.today()
+for ticker in ticker_stock['tickerkeys'].keys():
+    df = web.DataReader(ticker, 'naver', start, end)
+    df = df.astype('float64')
+    all_df[ticker] = df
+    stock = ticker_stock['tickerkeys'][ticker]
+    print(f'{ticker}, {stock} downloaded')
+print('\n\nDownload Completed')
 
+# df_name = 'daily'+datetime.today()+'.db'
+# with sqlite3.connect(df_name) as file:
+#     all_df.to_sql('Daily_Prices', file)
+#     print(f'Daily market data saved in D:\myprojects\TradingDB\daily\{df_name}')
 
 #Reierate from here
 path = r'D:\myprojects\TradingDB\daily'
@@ -143,7 +157,7 @@ for ticker in all_df.keys():
         ACC_PERIOD = len(df)
     for idx in range(-ACC_PERIOD, 0):
         ACCUMULATION = ACCUMULATION and \
-            df.VolChangePercent.values[idx] > 0.5 and 0 < df.CloseChangePercent.values[idx] < 0.03
+            df.VolChangePercent.values[idx] > 0.3 and 0 < df.CloseChangePercent.values[idx] < 0.025
     
     BANDWIDTH = all(df.Bandwidth[-PERIOD:] < 20)
     
