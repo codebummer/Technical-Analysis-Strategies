@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import *
-from PyQt5.QAxContainer import *
-from PyQt5.QtCore import *
+# from PyQt5.QtWidgets import *
+# from PyQt5.QAxContainer import *
+# from PyQt5.QtCore import *
 import pandas_datareader.data as web
 import pandas as pd
 import numpy as np
@@ -80,7 +80,7 @@ if not filenames:
         df = df.astype('float64')
         all_df[ticker] = df
         stock = ticker_stock['tickerkeys'][ticker]
-        print(f'{ticker, stock} downloaded')
+        print(f'{ticker}, {stock} downloaded')
         # with sqlite3.connect(ticker+'.db') as file:
         #     df.to_sql('Daily_Prices', file)
         #     print(f'{ticker} saved under D:\myprojects\TradingDB\daily')
@@ -158,11 +158,11 @@ for ticker in all_df.keys():
         print('Conditions are set for '+CONDITIONS)
     if CONDITIONS_PROCESSED:     
         screened_tickers.append(ticker)
-        # print(f'{ticker_stripped, stock } selected')        
-        print(f'{ticker, stock } selected')
+        # print(f'{ticker_stripped}, {stock} selected')        
+        print(f'{ticker}, {stock} selected')
     else:
-        # print(f'{ticker_stripped, stock} failed')
-        print(f'{ticker, stock} failed')    
+        # print(f'{ticker_stripped}, {stock} failed')
+        print(f'{ticker}, {stock} failed')    
 
 # screened_tickers = [stock.strip('.db') for stock in screened_tickers]
 screened_stocks = {}
