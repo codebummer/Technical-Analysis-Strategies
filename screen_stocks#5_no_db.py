@@ -91,12 +91,12 @@ def get_dailydata():
         if save == '1':
             df_name = 'daily'+'_'+str(datetime.today().strftime('%Y%m%d'))+'.db'
             with sqlite3.connect(df_name) as file:
-                all_df.to_sql('Daily_Prices', file)
+                pd.DataFrame(all_df).to_sql('Daily_Prices', file)
                 print(f'\nDaily market data saved in D:\myprojects\TradingDB\daily\{df_name}')
         elif save == '2':
             break
         else:
-            '\nPlease choose between 1 and 2'
+            print('\nPlease choose between 1 and 2')            
 
 #Reierate from here
 def screen_stocks(conditions):
@@ -161,7 +161,7 @@ def screen_stocks(conditions):
         TRADEPERIOD = 20
         ISTRADE = any(df.Volume[-TRADEPERIOD:] != 0) # 'ISTRADE = not all(df.Volume[-TRADEPERIOD:] != 0)' is the same
             
-            
+
         CONDITIONS = conditions
         conditions_dict = {'MA':MA, 'DAILYCHANGE':DAILYCHANGE, 'ACCUMULATION':ACCUMULATION, 'BANDWIDTH':BANDWIDTH, 'ISTRADE':ISTRADE}   
         CONDITIONS_PROCESSED = all([conditions_dict[con] for con in CONDITIONS.split(' and ')])
