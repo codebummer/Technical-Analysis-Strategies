@@ -148,7 +148,7 @@ def screen_stocks(conditions):
             MA = MA and all(ma[0][-PERIOD:] > ma[1][-PERIOD:])
 
         DAILYCHANGE = True
-        DAILYCHANGERANGE = 0.05
+        DAILYCHANGERANGE = 0.03
         MAXMINRANGE = 0.05
         DAILYCHANGE = all(-DAILYCHANGERANGE < df.CloseChangePercent[-PERIOD:]) and all(df.CloseChangePercent[-PERIOD:] < DAILYCHANGERANGE)\
                     and -MAXMINRANGE < (df.Close.values[-PERIOD:].max()/df.Close.values[-PERIOD] - 1) < MAXMINRANGE\
@@ -172,7 +172,7 @@ def screen_stocks(conditions):
 
         CONDITIONS = conditions
         conditions_dict = {'MA':MA, 'DAILYCHANGE':DAILYCHANGE, 'ACCUMULATION':ACCUMULATION, 'BANDWIDTH':BANDWIDTH, 'ISTRADE':ISTRADE}   
-        CONDITIONS_PROCESSED = all([conditions_dict[con] for con in CONDITIONS.split(' and ')])
+        CONDITIONS_PROCESSED = all([conditions_dict[con.strip()] for con in CONDITIONS.split(',')])
         # if ticker == filenames[0]:
         if ticker == list(all_df.keys())[0]:
             print('Conditions are set for '+CONDITIONS)
@@ -210,7 +210,7 @@ def screen_easy(conditions):
     save_results(conditions, screened_stocks)
 
 # Add screen conditions to use in the 'screen_easy' function as a string.
-# Use 'and' to connect multiple conditions shown below.          
+# Use ',' to connect multiple conditions shown below.          
 # Available conditions are MA, DAILYCHANGE, ACCUMULATION, BANDWIDTH, ISTRADE
 # ie. screen_easy('MA, DAILYCHANGE, ACCUMULATION, BANDWIDTH, ISTRADE')
-screen_easy('ACCUMULATION and ISTRADE')
+screen_easy('DAILYCHANGE, ISTRADE')
