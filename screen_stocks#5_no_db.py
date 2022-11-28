@@ -197,8 +197,11 @@ def save_results(conditions, screened_stocks):
     if not os.path.exists(path):
         os.mkdir(path)
     os.chdir(path)
-
-    filename_combined = 'screened_stocks'+'_'+conditions+'.json'
+    
+    conditions_processed =''
+    for condition in conditions.split(','):
+        conditions_processed += '_'+condition.strip()
+    filename_combined = 'screened_stocks'+conditions_processed+'.json'
     with open(filename_combined, 'w') as file:
         json.dump(screened_stocks, file)
         print(f'{len(screened_stocks.keys())} stock(s) found. Screen results saved in D:\myprojects\TradingDB\{filename_combined}')
