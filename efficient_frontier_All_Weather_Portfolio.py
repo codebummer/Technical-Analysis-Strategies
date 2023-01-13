@@ -44,9 +44,9 @@ annual_ret = np.power(daily_ret[-1:], 1/years) - 1
 daily_cov = df.pct_change().cov()
 annual_cov = daily_cov * BIZDAYS_A_YEAR
 
-port_ret, port_risk, port_weights = [], [], []
+port_ret, port_risk, port_weights, sharpe_ratio = [], [], [], []
 
-for _ in range(20_000):
+for _ in range(200_000):
     weights = np.random.random(len(stocks))
     weights /= np.sum(weights)
     
@@ -58,16 +58,22 @@ for _ in range(20_000):
     port_ret.append(returns)
     port_risk.append(risk)
     port_weights.append(weights)
+    sharpe_ratio.append(returns/risk)
 
-portfolio = {'Returns' : port_ret, 'Risk' : port_risk}
+portfolio = {'Returns' : port_ret, 'Risk' : port_risk, 'Sharpe' : sharpe_ratio}
 for i, s in enumerate(stocks.values()):
     portfolio[s] = [weight[i] for weight in port_weights]
-
+  
 df = pd.DataFrame(portfolio)
-df = df[['Returns', 'Risk'] + [s for s in stocks.values()]]
+df = df[['Returns', 'Risk', 'Sharpe'] + [s for s in stocks.values()]]
 
-df.plot.scatter(x='Risk', y='Returns', figsize=(8,6), grid=True)
-plt.title('Efficient Frontier')
+max_sharpe = df.loc[df['Sharpe']==df['Sharpe'].max()]
+min_risk = df.loc[df['Risk']==df['Risk'].min()]
+
+df.plot.scatter(x='Risk', y='Returns', c='Sharpe', cmap='viridis', edgecolors='k', figsize=(11,7), grid=True)
+plt.scatter(x=max_sharpe['Risk'], y=max_sharpe['Returns'], c='r', marker='*', s=300)
+plt.scatter(x=min_risk['Risk'], y=min_risk['Returns'], c='r', marker='X', s=200)
+plt.title('Efficient Frontier / Portfolio Optimization')
 plt.xlabel('Risk')
 plt.ylabel('Expected Returns')
 plt.show()
