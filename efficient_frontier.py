@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import pandas_datareader.data as web
+import yfinance as yf
 from datetime import datetime
 # from Investar import Analyzer
 
@@ -10,10 +11,13 @@ start = datetime(2019, 1, 1)
 end = datetime(2022, 11, 4)
 years = end.year - start.year
 
+yf.pdr_override()
 def fetch_prices(stocks):
     df = pd.DataFrame([])
     for ticker, stock in stocks.items():
-         df[stock] = (web.DataReader(ticker, 'yahoo', start, end)['Adj Close'])
+#          df[stock] = (web.DataReader(ticker, 'yahoo', start, end)['Adj Close']) #does not work anymore
+         df[stock] = (web.get_data_yahoo(ticker, start, end)['Close'])
+         
     return df
 
 stocks = {'005930.KS' : 'Samsung', 
