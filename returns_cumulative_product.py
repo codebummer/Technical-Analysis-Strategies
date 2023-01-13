@@ -13,7 +13,6 @@ df = df.astype('float')
 df = df.filter(['Close'])
 df['Change'] = df['Close'].pct_change()
 geomeans = df.Close[-1]/df.Close[0] - 1
-goemeans
 
 # change = df.pct_change()
 # change.columns = ['Change']
