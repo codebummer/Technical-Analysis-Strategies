@@ -19,6 +19,7 @@ geomeans = df.Close[-1]/df.Close[0] - 1
 # df = df.join(change)
 
 df['CumProd'] = df.Change.add(1).cumprod()
-cumProd = df.CumProd[-1] - 1
+df['Returns'] = df.CumProd.subtract(1)
+cumprod = df.Returns[-1]
 
-print(f'{geomeans - cumProd:.20f}')
+print(f'{geomeans - cumprod:.20f}')
