@@ -51,7 +51,7 @@ for _ in range(20_000):
     weights = np.random.random(len(stocks))
     weights /= np.sum(weights)
     
-    returns = np.dot(weights, annual_ret)
+    returns = np.dot(weights, annual_ret.iloc[0]) #returns = np.dot(weights, annual_ret.iloc[0]) -> does not work due to mismatch of dimensions
     risk = np.sqrt(np.dot(weights.T, np.dot(annual_cov, weights)))
     # risk = np.sqrt(np.multiply(weights.T, np.dot(annual_cov, weights))) # same as above
     # risk = np.sqrt(weights.T * np.dot(annual_cov, weights))) # same as above
@@ -72,7 +72,3 @@ plt.title('Efficient Frontier')
 plt.xlabel('Risk')
 plt.ylabel('Expected Returns')
 plt.show()
-
-    
-
-
