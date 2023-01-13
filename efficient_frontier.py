@@ -44,7 +44,7 @@ for _ in range(20_000):
     
     returns = np.dot(weights, annual_ret)
     risk = np.sqrt(np.dot(weights.T, np.dot(annual_cov, weights)))
-    # print(weights.T)
+    # risk = np.sqrt(np.multiply(weights.T, np.dot(annual_cov, weights))) # same as above
     
     port_ret.append(returns)
     port_risk.append(risk)
