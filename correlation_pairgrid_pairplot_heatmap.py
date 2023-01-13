@@ -76,3 +76,6 @@ plt.show()
 
 sns.pairplot(annual_cov)
 plt.show()
+
+sns.heatmap(annual_cov, annot=True)
+plt.show()
