@@ -41,8 +41,8 @@ annual_cov = daily_cov * BIZDAYS_A_YEAR
 # daily_cov = df.pct_change().cov()
 
 # daily_ret = df.pct_change().add(1).cumprod()
-# annual_ret = np.roots([-years, daily_ret[-1]]) - 1 #should be same as below, but somehow incorrect
-# annual_ret = np.power(daily_ret[-1], 1/years) - 1 #this is correct
+# annual_ret = np.roots([-years, daily_ret[-1:]]) - 1 #should be same as below, but somehow incorrect
+# annual_ret = np.power(daily_ret[-1:], 1/years) - 1 #this is correct
 
 
 port_ret, port_risk, port_weights = [], [], []
