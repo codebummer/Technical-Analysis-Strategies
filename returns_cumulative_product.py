@@ -8,9 +8,12 @@ start = datetime(1980, 1, 1)
 end = datetime.today()
 years = end.year - start.year
 
-yf.pdr_override()
+yf.pdr_override() # newly needed due to Yahoo's policy changes 
 ticker = '005930'
-# df = web.DataReader(ticker, 'naver', start, end)
+# df = web.DataReader(ticker, 'naver', start, end) 
+# The above statement does not work anymore, 
+# because they started to encrypt the stored data
+# https://github.com/pydata/pandas-datareader/issues/952
 df = web.get_data_yahoo(ticker, start, end)
 
 df = df.astype('float')
