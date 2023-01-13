@@ -31,6 +31,11 @@ annual_ret = daily_ret.mean() * BIZDAYS_A_YEAR
 daily_cov = daily_ret.cov()
 annual_cov = daily_cov * BIZDAYS_A_YEAR
 
+# daily_ret = df.pct_change().add(1).cumprod().subtract(1)
+# annual_ret = daily_ret[BIZDAYS_A_YEAR]
+# daily_cov = df.pct_change().cov()
+
+
 port_ret, port_risk, port_weights = [], [], []
 
 for _ in range(20_000):
