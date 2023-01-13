@@ -23,6 +23,6 @@ df['CumProd'] = df.Change.add(1).cumprod()
 df['Returns'] = df.CumProd.subtract(1)
 cumprod = df.Returns[-1]
 
-annual_returns = np.roots([-years, df.Change[-1]])
+annual_returns = np.roots([-years, df.CumProd[-1]])
 
 print(f'{geomeans - cumprod:.20f}')
