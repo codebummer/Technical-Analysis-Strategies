@@ -78,7 +78,7 @@ with sqlite3.connect('allweather_portfolio.db') as db:
 print(f'Sharpe Ratio Maximized: {max_sharpe} \nRisks Minmized: {min_risk}')
 
 sns.set()
-fig, ax = plt.subplots(3,3)
+fig, ax = plt.subplots(3,3, layout='constrained')
 count = 0
 for i in range(3):
   for j in range(3):
