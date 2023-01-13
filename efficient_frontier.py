@@ -7,8 +7,8 @@ from datetime import datetime
 # from Investar import Analyzer
 
 
-start = datetime(2019, 1, 1)
-end = datetime(2022, 11, 4)
+start = datetime(1980, 1, 1)
+end = datetime.today()
 years = end.year - start.year
 
 yf.pdr_override()
