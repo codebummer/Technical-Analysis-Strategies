@@ -22,7 +22,7 @@ df = web.get_data_yahoo(ticker, start, end)
 
 df = df.filter(['Close'])
 df['Change'] = df['Close'].pct_change()
-geomeans = df.Close[-1]/df.Close[0] - 1
+geomeans = np.power(df.Close[-1]/df.Close[0], 1/years) - 1
 
 # change = df.pct_change()
 # change.columns = ['Change']
