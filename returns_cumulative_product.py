@@ -9,14 +9,17 @@ end = datetime.today()
 years = end.year - start.year
 
 yf.pdr_override() # newly needed due to Yahoo's policy changes 
-ticker = '005930'
+ticker = '005930.ks'
 # df = web.DataReader(ticker, 'naver', start, end) 
 # The above statement does not work anymore, 
 # because they started to encrypt the stored data
 # https://github.com/pydata/pandas-datareader/issues/952
 df = web.get_data_yahoo(ticker, start, end)
 
-df = df.astype('float')
+# ticker = '005930'
+# df = web.DataReader(ticker, 'naver', start, end)
+# df = df.astype('float')
+
 df = df.filter(['Close'])
 df['Change'] = df['Close'].pct_change()
 geomeans = df.Close[-1]/df.Close[0] - 1
