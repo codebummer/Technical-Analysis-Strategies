@@ -59,8 +59,18 @@ cormat = prices.corr()
 sns.set(font_scale=0.5)
 fig1, ax1 = plt.subplots(1)
 sns.PairGrid(prices).map(sns.scatterplot)
+plt.show()
 
 sns.set()
 fig2, ax2 = plt.subplots(1)
 sns.heatmap(cormat, cmap='YlGnBu', annot=True, linewidths=0.1, ax=ax2)
+plt.show()
+
+sns.pairplot(prices)
+plt.show()
+
+pd.plotting.scatter_matrix(prices)
+plt.show()
+
+sns.pairplot(annual_cov)
 plt.show()
