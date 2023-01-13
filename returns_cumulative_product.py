@@ -36,3 +36,4 @@ cumprod = df.Returns[-1]
 annual_returns = np.power(df.CumProd[-1], 1/years) - 1 #This is correct. This is called CAGR.
 
 print(f'{geomeans - cumprod:.20f}')
+print(f'{geomeans - annual_returns:.20f}')
