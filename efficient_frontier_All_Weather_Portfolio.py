@@ -32,7 +32,7 @@ stocks = {
 df = fetch_prices(stocks)
 
 with sqlite3.connect('allweather_portfolio.db') as db:
-  df.to_sql('All_Weather_Portfolio', db, if_exists='replace')
+  df.to_sql('Stock_Prices', db, if_exists='replace')
 
 # with sqlite3.connect('allweather_portfolio.db') as db:
 #   df = pd.read_sql('SELECT * from [All_Weather_Portfolio]', db)  
@@ -69,6 +69,12 @@ df = df[['Returns', 'Risk', 'Sharpe'] + [s for s in stocks.values()]]
 
 max_sharpe = df.loc[df['Sharpe']==df['Sharpe'].max()]
 min_risk = df.loc[df['Risk']==df['Risk'].min()]
+
+with sqlite3.connect('allweather_portfolio.db') as db:
+  max_sharpe.to_sql('Sharpe_Ratio_Maximized_Portfolio', db, if_exists='replace')
+  min_risk.to_sql('Risks_Minimized_Portfolio', db, if_exists='replace')
+  
+print(f'Sharpe Ratio Maximized: {max_sharpe} \nRisks Minmized: {min_risk}')
 
 df.plot.scatter(x='Risk', y='Returns', c='Sharpe', cmap='viridis', edgecolors='k', figsize=(11,7), grid=True)
 plt.scatter(x=max_sharpe['Risk'], y=max_sharpe['Returns'], c='r', marker='*', s=300)
