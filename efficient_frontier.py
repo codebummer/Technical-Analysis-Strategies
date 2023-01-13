@@ -8,6 +8,7 @@ from datetime import datetime
 
 start = datetime(2019, 1, 1)
 end = datetime(2022, 11, 4)
+years = end.year - start.year
 
 def fetch_prices(stocks):
     df = pd.DataFrame([])
@@ -35,6 +36,8 @@ annual_cov = daily_cov * BIZDAYS_A_YEAR
 # annual_ret = daily_ret[BIZDAYS_A_YEAR]
 # daily_cov = df.pct_change().cov()
 
+# daily_ret = df.pct_change().add(1).cumprod()
+# annual_ret = np.roots([-years, daily_ret[-1]])
 
 port_ret, port_risk, port_weights = [], [], []
 
