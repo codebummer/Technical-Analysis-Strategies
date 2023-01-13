@@ -1,5 +1,6 @@
 import pandas as pd
 import pandas_datareader.data as web
+import yfinance as yf
 import numpy as np
 from datetime import datetime 
 
@@ -7,8 +8,10 @@ start = datetime(1980, 1, 1)
 end = datetime.today()
 years = end.year - start.year
 
+yf.pdr_override()
 ticker = '005930'
-df = web.DataReader(ticker, 'naver', start, end)
+# df = web.DataReader(ticker, 'naver', start, end)
+df = web.get_data_yahoo(ticker, start, end)
 
 df = df.astype('float')
 df = df.filter(['Close'])
