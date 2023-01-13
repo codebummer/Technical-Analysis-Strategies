@@ -5,6 +5,7 @@ import pandas_datareader.data as web
 import yfinance as yf
 from datetime import datetime
 import sqlite3
+import seaborn as sns
 
 start = datetime(2010, 7, 23)
 end = datetime.today()
@@ -29,19 +30,19 @@ stocks = {
   'EMLC' : 'Emerging Market Bonds'
 }
 
-df = fetch_prices(stocks)
+prices = fetch_prices(stocks)
 
 with sqlite3.connect('allweather_portfolio.db') as db:
-  df.to_sql('Stock_Prices', db, if_exists='replace')
+  prices.to_sql('Stock_Prices', db, if_exists='replace')
 
 # with sqlite3.connect('allweather_portfolio.db') as db:
-#   df = pd.read_sql('SELECT * from [All_Weather_Portfolio]', db)  
+#   prices = pd.read_sql('SELECT * from [All_Weather_Portfolio]', db)  
 
 # BIZDAYS_A_YEAR = (end-start).days / years #This is wrong
 BIZDAYS_A_YEAR = 252
-daily_ret = df.pct_change().add(1).cumprod()
+daily_ret = prices.pct_change().add(1).cumprod()
 annual_ret = np.power(daily_ret[-1:], 1/years) - 1
-daily_cov = df.pct_change().cov()
+daily_cov = prices.pct_change().cov()
 annual_cov = daily_cov * BIZDAYS_A_YEAR
 
 port_ret, port_risk, port_weights, sharpe_ratio = [], [], [], []
@@ -75,6 +76,14 @@ with sqlite3.connect('allweather_portfolio.db') as db:
   min_risk.to_sql('Risks_Minimized_Portfolio', db, if_exists='replace')
   
 print(f'Sharpe Ratio Maximized: {max_sharpe} \nRisks Minmized: {min_risk}')
+
+sns.set()
+fig, ax = plt.subplots(3,3)
+count = 0
+for i in range(3):
+  for j in range(3):
+    sns.distplot(df.iloc[:,count], bins=25, color='g', ax=ax[i,j])
+plt.show() 
 
 df.plot.scatter(x='Risk', y='Returns', c='Sharpe', cmap='viridis', edgecolors='k', figsize=(11,7), grid=True)
 plt.scatter(x=max_sharpe['Risk'], y=max_sharpe['Returns'], c='r', marker='*', s=300)
