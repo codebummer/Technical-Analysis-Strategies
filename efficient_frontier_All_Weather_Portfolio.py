@@ -83,6 +83,7 @@ count = 0
 for i in range(3):
   for j in range(3):
     sns.distplot(df.iloc[:,count], bins=25, color='g', ax=ax[i,j])
+    count += 1
 plt.show() 
 
 df.plot.scatter(x='Risk', y='Returns', c='Sharpe', cmap='viridis', edgecolors='k', figsize=(11,7), grid=True)
