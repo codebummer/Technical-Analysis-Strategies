@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import pandas_datareader.data as web
 import yfinance as yf
 from datetime import datetime
@@ -82,9 +83,13 @@ fig, ax = plt.subplots(3,3, layout='constrained')
 count = 0
 for i in range(3):
   for j in range(3):
-    sns.distplot(df.iloc[:,count], bins=25, color='g', ax=ax[i,j])
+    sns.distplot(prices.iloc[:,count], bins=25, color='g', ax=ax[i,j])
     count += 1
 plt.show() 
+
+fig, ax = plt.sutplots()
+sns.displot(prices)
+plt.show()
 
 df.plot.scatter(x='Risk', y='Returns', c='Sharpe', cmap='viridis', edgecolors='k', figsize=(11,7), grid=True)
 plt.scatter(x=max_sharpe['Risk'], y=max_sharpe['Returns'], c='r', marker='*', s=300)
