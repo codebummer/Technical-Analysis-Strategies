@@ -5,6 +5,7 @@ from datetime import datetime
 
 start = datetime(1980, 1, 1)
 end = datetime.today()
+years = end.year - start.year
 
 ticker = '005930'
 df = web.DataReader(ticker, 'naver', start, end)
@@ -21,5 +22,7 @@ geomeans = df.Close[-1]/df.Close[0] - 1
 df['CumProd'] = df.Change.add(1).cumprod()
 df['Returns'] = df.CumProd.subtract(1)
 cumprod = df.Returns[-1]
+
+annual_returns = np.roots([-years, df.Change[-1]])
 
 print(f'{geomeans - cumprod:.20f}')
