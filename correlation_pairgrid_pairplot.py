@@ -54,6 +54,8 @@ annual_cov = daily_cov * BIZDAYS_A_YEAR
 # sns.heatmap(cormat, cmap='YlGnBu', annot=True, linewidths=0.1, ax=ax[1])
 # plt.show()
 
+# The following are multiple ways to plot pairgrid(or pairplot or scatter matrix)
+
 cormat = prices.corr()
 
 sns.set(font_scale=0.5)
