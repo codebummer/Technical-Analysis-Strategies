@@ -88,7 +88,7 @@ for i in range(3):
 plt.show() 
 
 fig, ax = plt.sutplots()
-sns.displot(prices)
+sns.displot(prices, kind='kde')
 plt.show()
 
 df.plot.scatter(x='Risk', y='Returns', c='Sharpe', cmap='viridis', edgecolors='k', figsize=(11,7), grid=True)
