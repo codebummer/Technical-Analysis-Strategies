@@ -23,7 +23,7 @@ df['CumProd'] = df.Change.add(1).cumprod()
 df['Returns'] = df.CumProd.subtract(1)
 cumprod = df.Returns[-1]
 
-# annual_returns = np.roots([-years, df.CumProd[-1]]) - 1
-annual_returns = np.power(df.CumProd[-1], 1/years) -1 #same as above
+# annual_returns = np.roots([-years, df.CumProd[-1]]) - 1 #shoul be same as below, but somehow incorrect
+annual_returns = np.power(df.CumProd[-1], 1/years) -1 #This is correct
 
 print(f'{geomeans - cumprod:.20f}')
