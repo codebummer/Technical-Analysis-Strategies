@@ -40,6 +40,20 @@ with sqlite3.connect('allweather_portfolio.db') as db:
 # for date in prices.index:
 #     prices.loc[date, 'DayofYear'] = pd.Period(date, freq='D').day_of_year
 
+weights = {
+    'SPY' : [12],
+    'EFA' : [12],
+    'EEM' : [12],
+    'DBC' : [7],
+    'GLD' : [7],
+    'EDV' : [18],
+    'LTPZ' : [18],
+    'LQD' : [7],
+    'EMLC' : [7]
+}    
+weights = pd.DataFrame(weights)
+weights.index = [pd.Timestamp(start)]
+
 days = {'first':[], 'last':[]}
 for year in range(start.year, end.year+1):
     nday = prices.loc[prices.index.year==year, 'DayofYear']  
@@ -63,7 +77,7 @@ yearly_ret = yearly_ret.T
 yearly_ret = pd.concat([yearly_ret, pd.Series(yearly_ret.sum(axis=1), name='Total')], axis=1)
 
 all_year_cumprod = daily_ret.add(1).cumprod()
-all_year_cumprod = all_year_cumprod.loc[:, all_year_cumprod.columns!='DayofYear']
+# all_year_cumprod = all_year_cumprod.loc[:, all_year_cumprod.columns!='DayofYear'] # not used because the above 'DayofYear' column is not created
 all_year_ret = np.power(all_year_cumprod.iloc[-1:], 1/days['days'].sum()[0].days) - 1
 all_year_total_ret = all_year_ret.sum(axis=1)
 all_year_total_ret = all_year_total_ret[-1]
