@@ -144,7 +144,7 @@ plt.show()
 
 port = holdings*yearly_prices
 allocation_diff = (port.divide(port.sum(axis='columns'), axis='index') - weights/weights.sum()) * 100
-allocation_diff.loc[allocation_diff.values>1]
+allocation_diff.loc[allocation_diff.values>1][allocation_diff>1]
 
 
 
