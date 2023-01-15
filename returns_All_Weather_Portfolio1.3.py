@@ -36,6 +36,14 @@ stocks = {
 
 prices = fetch_prices(stocks)
 
+krw = fetch_prices({'KRW=X':'USD/KRW'})
+krw['change'] = krw.pct_change()
+krw_cumprod = pd.DataFrame()
+for year in years:
+    krw_cumprod = pd.concat([krw_cumprod, krw.loc[krw.index.year==year,'change'].add(1).cumprod()])
+krw = pd.concat([krw,krw_cumprod], axis='columns')
+krw.columns = list(krw.columns)[:-1]+['cumprod']
+
 with sqlite3.connect('allweather_portfolio.db') as db:
     prices.to_sql('Stock_Prices', db, if_exists='replace')
 
@@ -146,6 +154,9 @@ port = holdings*yearly_prices
 allocation_diff = (port.divide(port.sum(axis='columns'), axis='index') - weights/weights.sum()) * 100
 allocation_diff.loc[allocation_diff.values>1][allocation_diff>1]
 
+daily_FX_included_values = pd.DataFrame()
+for day in prices.index:
+    pd.concat([daily_FX_included_values, ])
 
 
 daily_ret = prices.pct_change()
@@ -224,13 +235,11 @@ all_year_drawdowns = prices/all_year_peaks - 1
 all_year_mdds = all_year_drawdowns.min()
 # all_year_mdds = all_year_mdds[:len(all_year_drawdowns.min())-1] # not used because the above 'DayofYear' column is not created
 
-
 risk_free = yearly_ret.sub(yearly_ret['Tresuary Inflation-Protected Securities'], axis='index')
 yearly_asset_stds.index = risk_free.index
 yearly_total_stds.index = risk_free.index
 yearly_sharpe = pd.concat([risk_free.loc[:,risk_free.columns!='Total'].div(yearly_asset_stds), \
     pd.Series(risk_free['Total']/yearly_total_stds[''], name='Total')], axis='columns')
-
 
 all_year_class_sharpe = (all_year_ret-all_year_ret['Tresuary Inflation-Protected Securities'][0])/all_year_class_stds
 all_year_total_sharpe = (all_year_ret.sum(axis='columns')[0]-all_year_ret['Tresuary Inflation-Protected Securities'][0])/all_year_total_stds
