@@ -138,25 +138,36 @@ for yearend in yearly_prices.index:
     # off_qty.loc[off_qty>0] refers to assets to sell (plus values so subract this from holdings)
     holdings.loc[yearend] = holdings.loc[yearend] + rebalance_qty.loc[rebalance_assets] - off_qty.clip(lower=0)
 
-portfolio_prices = pd.DataFrame()
+FX_included_prices = pd.DataFrame()
 for year in years:
-    portfolio_prices = pd.concat([portfolio_prices, prices.loc[prices.index.year==year]*holdings.loc[yearend]])
-portfolio_daily_values = portfolio_prices.sum(axis='columns')
+    FX_included_prices = pd.concat([FX_included_prices, (prices.loc[prices.index.year==year]).multiply(krw.loc[krw.index.year==year,'cumprod'], axis='index')])
+FX_included_prices
+
+
+portfolio_prices = {'FX_included': pd.DataFrame(), 'FX_not_included': pd.DataFrame()}
+for year in years:
+    portfolio_prices['FX_not_included'] = pd.concat([portfolio_prices['FX_not_included'], prices.loc[prices.index.year==year]*holdings.loc[yearend]])
+    portfolio_prices['FX_included'] = pd.concat([portfolio_prices['FX_included'], FX_included_prices.loc[FX_included_prices.index.year==year]*holdings.loc[yearend]])
+portfolio_daily_values = {'FX_not_included':portfolio_prices['FX_not_included'].sum(axis='columns'),
+                          'FX_included':portfolio_prices['FX_included'].sum(axis='columns')}
+
+portfolio_daily_values['FX_included'].loc[portfolio_daily_values['FX_included'].isna()]
+any(portfolio_daily_values['FX_included'].isna())
+
+portfolio_daily_values['FX_included'] = portfolio_daily_values['FX_included'].loc[portfolio_daily_values['FX_included']!=0]
 
 sns.set()
-fig1, ax1 = plt.subplots(1,2)
-ax1[0].plot(portfolio_daily_values)
-ax1[1].plot(portfolio_prices)
-plt.legend(portfolio_prices.columns)
+fig1, ax1 = plt.subplots(2,2)
+ax1[0,0].plot(portfolio_daily_values['FX_not_included'])
+ax1[0,1].plot(portfolio_prices['FX_not_included'])
+ax1[1,0].plot(portfolio_daily_values['FX_included'])
+ax1[1,1].plot(portfolio_prices['FX_included'])
+plt.legend(portfolio_prices['FX_not_included'].columns)
 plt.show()
 
 port = holdings*yearly_prices
 allocation_diff = (port.divide(port.sum(axis='columns'), axis='index') - weights/weights.sum()) * 100
 allocation_diff.loc[allocation_diff.values>1][allocation_diff>1]
-
-daily_FX_included_values = pd.DataFrame()
-for day in prices.index:
-    pd.concat([daily_FX_included_values, ])
 
 
 daily_ret = prices.pct_change()
