@@ -124,8 +124,17 @@ for yearend in yearly_prices.index:
     # gains = off_qty.loc[off_qty>0] * yearly_prices.loc[yearend,off_qty>0] 
     # losses = off_qty.loc[off_qty<0] * yearly_prices.loc[yearend,off_qty<0]
     
-    if gains.sum() < losses.min():
+    loss_unit_prices = off_qty.clip(upper=0).where(off_qty.clip(upper=0)==0,1) * yearly_prices.loc[yearend]
+    loss_unit_prices = loss_unit_prices.loc[loss_unit_prices!=0].sort_values()
+    min_asset, min_unit_price = loss_unit_prices.index[0], loss_unit_prices[0]    
+    if gains.sum() < min_unit_price:
         break
+    
+    # The following is rather inaccurate condition to skip rebalancing
+    # because it looks at the minimum amount of the total loss asset,
+    # not the minimum amount of the unit loss asset
+    # if gains.sum() < losses.min(): 
+    #     break
     
     # quantify asset quantities to restock from money amounts to restock
     rebalance_ratio = off_qty.clip(upper=0) / off_qty.clip(upper=0).sum()
