@@ -293,3 +293,19 @@ yearly_sharpe = pd.concat([risk_free.loc[:,risk_free.columns!='Total'].div(yearl
 
 all_year_class_sharpe = (all_year_returns-all_year_returns['LTPZ'][0])/all_year_class_stds
 all_year_total_sharpe = (all_year_returns.sum(axis='columns')[0]-all_year_returns['LTPZ'][0])/all_year_total_stds
+
+
+fig, ax = plt.subplots(2,2, layout='constrained')
+ax[0,0].plot(daily_portfolio_values.sum(axis='columns'))
+ax[0,0].set_title('Total Assets FX Not Included')
+ax[0,1].plot(daily_portfolio_values)
+ax[0,1].set_title('Each Asset FX Not Included')
+ax[1,0].plot(daily_portfolio_values_FX_included.sum(axis='columns'))
+ax[1,0].set_title('Total Assets FX Included')
+ax[1,1].plot(daily_portfolio_values_FX_included)
+ax[1,1].set_title('Each Asset FX Included')
+plt.ticklabel_format(style='plain')
+ax[0,1].legend(daily_portfolio_values.columns)
+ax[1,1].legend(daily_portfolio_values.columns)
+plt.suptitle('All Weather Portfolio')
+plt.show()
