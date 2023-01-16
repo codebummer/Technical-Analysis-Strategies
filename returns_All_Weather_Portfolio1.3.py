@@ -103,111 +103,6 @@ for year in years:
     yearly_cumprod = pd.concat([yearly_cumprod, daily_ret.loc[daily_ret.index.year==year].add(1).cumprod().iloc[-1,:]], axis='columns')
 yearly_cumprod = yearly_cumprod.T
 
-import pandas as pd
-import pandas_datareader.data as web
-import yfinance as yf
-import numpy as np
-from datetime import datetime
-import sqlite3
-import matplotlib.pyplot as plt
-import seaborn as sns
-import os
-os.chdir(r'D:\myprojects')
-
-start = datetime(2010, 7, 23)
-end = datetime.today()
-years = tuple(range(start.year, end.year+1))
-
-yf.pdr_override()
-def fetch_prices(stocks):
-    df = pd.DataFrame([])
-    for ticker, stock in stocks.items():
-        # df[stock] = (web.get_data_yahoo(ticker, start, end)['Close'])
-        df[ticker] = (web.get_data_yahoo(ticker, start, end)['Close'])
-    return df
-
-stocks = {
-    'SPY' : 'US Stocks',
-    'EFA' : 'Non-US Dveloped Market Stocks',
-    'EEM' : 'Emerging Market Stocks',
-    'DBC' : 'Commodities',
-    'GLD' : 'Gold',
-    'EDV' : 'Extended Duration Teasuries',
-    'LTPZ' : 'Tresuary Inflation-Protected Securities',
-    'LQD' : 'US Corporate Bonds',
-    'EMLC' : 'Emerging Market Bonds',
-    # 'KRW=X' : 'USD/KRW'
-}
-
-prices = fetch_prices(stocks)
-
-krw = fetch_prices({'KRW=X':'USD/KRW'})
-krw['change'] = krw.pct_change()
-krw_cumprod = pd.DataFrame()
-for year in years:
-    krw_cumprod = pd.concat([krw_cumprod, krw.loc[krw.index.year==year,'change'].add(1).cumprod()])
-krw = pd.concat([krw,krw_cumprod], axis='columns')
-krw.columns = list(krw.columns)[:-1]+['cumprod']
-
-with sqlite3.connect('allweather_portfolio.db') as db:
-    prices.to_sql('Stock_Prices', db, if_exists='replace')
-
-# for date in prices.index:
-#     prices.loc[date, 'DayofYear'] = pd.Period(date, freq='D').day_of_year
-
-weights = {
-    'SPY' : 12,
-    'EFA' : 12,
-    'EEM' : 12,
-    'DBC' : 7,
-    'GLD' : 7,
-    'EDV' : 18,
-    'LTPZ' : 18,
-    'LQD' : 7,
-    'EMLC' : 7
-}   
-# create a series instead of a dataframe, 
-# because when multiplying, index names (or column names) are often different, 
-# which causes incorrect results 
-weights = pd.Series(weights) 
-
-invested = 10_000
-
-# use the following statement, when weights is defined as a dataframe. 
-# Because the indices are different, 
-# multiplying, indices should be removed
-# weights.iloc[0,:] * prices.head() 
-
-
-# The following immediate block is just for initial plotting purposes.
-weighted_prices = weights*prices
-daily_amounts = weighted_prices.sum(axis='columns')
-sns.set()
-fig, ax = plt.subplots(1,2)
-ax[0].plot(daily_amounts)
-ax[1].plot(weighted_prices)
-plt.legend(weighted_prices.columns)
-plt.show()
-
-holdings = invested * weights / prices.iloc[0,:]
-holdings = holdings.astype('int')
-holdings = holdings.to_frame(name=pd.Timestamp(start))
-holdings = holdings.T
-
-values = holdings * prices.iloc[0,:]
-
-yearly_prices = pd.DataFrame(prices.iloc[0,:], columns=[prices.index[0]])
-for year in years:
-    yearly_prices = pd.concat([yearly_prices, prices.loc[prices.index.year==year].iloc[-1,:]], axis='columns')
-yearly_prices = yearly_prices.T
-
-daily_ret = prices.pct_change()
-yearly_cumprod = pd.DataFrame()
-for year in years:
-    # yearly_cumprod = pd.concat([yearly_cumprod, daily_ret.loc[daily_ret.index.year==year].add(1).cumprod()])
-    yearly_cumprod = pd.concat([yearly_cumprod, daily_ret.loc[daily_ret.index.year==year].add(1).cumprod().iloc[-1,:]], axis='columns')
-yearly_cumprod = yearly_cumprod.T
-
 # rebalancing portfolio assets according to asset allocation plans, or 'weights' in this code
 for yearend in yearly_prices.index:    
     if yearend == yearly_prices.index[0]:
@@ -331,24 +226,6 @@ port = holdings*yearly_prices
 allocation_diff = (port.divide(port.sum(axis='columns'), axis='index') - weights/weights.sum()) * 100
 allocation_diff.loc[allocation_diff.values>1][allocation_diff>1]
 
-
-
-
-
-daily_ret = prices.pct_change()
-
-yearly_cumprod = pd.DataFrame()
-for year in years:
-    # yearly_cumprod = pd.concat([yearly_cumprod, daily_ret.loc[daily_ret.index.year==year].add(1).cumprod()])
-    yearly_cumprod = pd.concat([yearly_cumprod, daily_ret.loc[daily_ret.index.year==year].add(1).cumprod().iloc[-1,:]], axis='columns')
-yearly_cumprod = yearly_cumprod.T
-
-for year in years:
-    yearly_cumprod.loc[yearly_cumprod.index.year==year]
-(yearly_cumprod*weights)
-annual = yearly_cumprod.loc[yearly_cumprod.index.year==2010]
-off_balance = annual.iloc[0,:]/annual.sum(axis='columns')[0]-weights/100
-off_balance.sort_values()
 
 yearly_ret = pd.DataFrame()
 for year in years:
