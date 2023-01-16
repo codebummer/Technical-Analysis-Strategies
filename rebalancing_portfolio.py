@@ -200,11 +200,10 @@ for year in years:
     FX_included_prices = pd.concat([FX_included_prices, (prices.loc[prices.index.year==year]).multiply(krw.loc[krw.index.year==year,'cumprod'], axis='index')])
 FX_included_prices
 
-
 portfolio_prices = {'FX_included': pd.DataFrame(), 'FX_not_included': pd.DataFrame()}
 for year in years:
-    portfolio_prices['FX_not_included'] = pd.concat([portfolio_prices['FX_not_included'], prices.loc[prices.index.year==year]*holdings.loc[yearend]])
-    portfolio_prices['FX_included'] = pd.concat([portfolio_prices['FX_included'], FX_included_prices.loc[FX_included_prices.index.year==year]*holdings.loc[yearend]])
+    portfolio_prices['FX_not_included'] = pd.concat([portfolio_prices['FX_not_included'], prices.loc[prices.index.year==year]*holdings.loc[holdings.index.year==year].iloc[0,:]])
+    portfolio_prices['FX_included'] = pd.concat([portfolio_prices['FX_included'], FX_included_prices.loc[FX_included_prices.index.year==year]*holdings.loc[holdings.index.year==year].iloc[0,:]])
 portfolio_daily_values = {'FX_not_included':portfolio_prices['FX_not_included'].sum(axis='columns'),
                           'FX_included':portfolio_prices['FX_included'].sum(axis='columns')}
 
