@@ -227,6 +227,17 @@ allocation_diff = (port.divide(port.sum(axis='columns'), axis='index') - weights
 allocation_diff.loc[allocation_diff.values>1][allocation_diff>1]
 
 
+# The below should be rechecked and rewritten if necessary
+
+
+days = {'first':[], 'last':[]}
+for year in range(start.year, end.year+1):
+    nday = prices.loc[prices.index.year==year, 'DayofYear']  
+    days['first'].append(nday.loc[nday==nday.min()].index)
+    days['last'].append(nday.loc[nday==nday.max()].index)
+days = pd.DataFrame(days, index=range(start.year, end.year+1))
+days['days'] = days['last'] - days['first']
+
 yearly_ret = pd.DataFrame()
 for year in years:
     returns = np.power(yearly_cumprod.loc[yearly_cumprod.index.year==year].iloc[-1,:], 1/days['days'][year][0].days) - 1
