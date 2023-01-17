@@ -108,9 +108,7 @@ for year in years:
 yearly_cumprod = yearly_cumprod.T
 
 # rebalancing portfolio assets according to asset allocation plans, or 'weights' in this code
-for yearend in yearly_prices.index:    
-    if yearend == yearly_prices.index[0]:
-        continue
+for yearend in yearly_prices.index[1:]:
     add = pd.DataFrame(yearly_prices.loc[yearend] * holdings.iloc[-1,:], columns=[yearend]).T
     values = pd.concat([values, add])
     
