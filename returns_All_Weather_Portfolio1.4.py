@@ -340,4 +340,3 @@ plt.xticks(rotation=45)
 fig.tight_layout()
 plt.suptitle('All Weather Portfolio - Total Asset Annual Returns')
 plt.show()
-yearly_ret.sum(axis='columns')*100
