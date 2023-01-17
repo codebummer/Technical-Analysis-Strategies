@@ -11,7 +11,12 @@ yf.pdr_override()
 os.chdir(r'D:\myprojects')
 
 class portfolio:
-    def __init__(self, stocks):
+    def __init__(self, inputs):
+        self.inputs = inputs
+        self.results = []
+        self._execute()
+
+    def _set_inputs(self, stocks):
         self.start = datetime(2006, 2, 6)
         self.end = datetime.today()
         self.invested = 10_000
@@ -23,9 +28,7 @@ class portfolio:
         self.days = self.find_days()
 
         self.weights = pd.Series(self.weights)
-        self.FX = self.get_prices({'KRW=X':'USD/KRW'})
-
-        self.execute()
+        self.FX = self.get_prices({'KRW=X':'USD/KRW'})        
 
     def get_prices(self, stocks):
         df = pd.DataFrame([])
@@ -103,7 +106,7 @@ class portfolio:
         if any(sum_discrepancies):
             print('\nWarning: the following asset allocations do not sum up to 100%\n', sum_discrepancies)
 
-    def find_initial_values(self):
+    def _find_initial_values(self):
         self.values = self.holdings * self.prices.iloc[0,:]
 
     def _find_daily_values(self):
@@ -119,38 +122,47 @@ class portfolio:
             self.daily_portfolio_values = pd.concat([self.daily_portfolio_values, self.prices.loc[self.prices.index.year==year]*self.holdings.loc[self.holdings.index.year==year].iloc[0,:]])
             self.daily_portfolio_values_FX_included = pd.concat([self.daily_portfolio_values_FX_included, self.daily_prices_FX_included.loc[self.daily_prices_FX_included.index.year==year]*self.holdings.loc[self.holdings.index.year==year].iloc[0,:]])
 
-    def visualize(self):
+    def _calc_comparison(self):
         weighted_prices = self.weights * self.prices
         daily_amounts = weighted_prices.sum(axis='columns')
-        ratio = ((self.invested/len(self.prices.columns))/self.prices.iloc[0,:]).round()
+        self.ratio = ((self.invested/len(self.prices.columns))/self.prices.iloc[0,:]).round()
 
-        assets = {}
+        self.assets = {}
         for asset in self.prices.columns:
-            assets[asset] = math.floor(self.invested/self.prices[asset][0])
+            self.assets[asset] = math.floor(self.invested/self.prices[asset][0])
 
+    def _save_daily_values(self):
+        self.results.append([self.prices, self.daily_portfolio_values, self.daily_portfolio_values_FX_included, self.ratio, self.assets, self.weights])
+
+    def visualize(self):
         sns.set()
-        fig, ax = plt.subplots(1)
-        ax.plot((ratio*self.prices).sum(axis='columns'))
-        ax.plot(self.daily_portfolio_values.sum(axis='columns'))
-        for asset in assets.keys():
-            ax.plot(self.prices[asset] * assets[asset])
-        ax.legend(['Non-Weighted', 'Weighted'] + list(assets.keys()))
+        n = len(self.results)
+        for results in self.results:
+            fig, ax = plt.subplots(1)
+            ax.plot((results[3]*results[0]).sum(axis='columns'))
+            ax.plot(results[1].sum(axis='columns'))
+            for asset in results[4].keys():
+                ax.plot(results[0][asset] * results[4][asset])
+            ax.legend(['Non-Weighted', 'Weighted'] + list(results[4].keys()))
 
-        names = str(self.weights.index[:]) 
-        r = str(self.weights.values)
-        names = names.strip("Index([], dtype)='object'").replace("', '", ":")
-        r = r.strip('[]').replace(' ', ':')
-        
-        plt.suptitle(names+' '+r)
+            names = str(results[5].index[:]) 
+            r = str(results[5].values)
+            names = names.strip("Index([], dtype)='object'").replace("', '", ":")
+            r = r.strip('[]').replace(' ', ':')            
+            plt.suptitle(names+' '+r)
         plt.show()
 
-    def execute(self):
-        self.find_holdings()
-        self.find_initial_values()
-        self._find_yearly_prices()
-        self._rebalance_holdings()
-        self._check_rebalancing()
-        self._find_daily_values()
+    def _execute(self):
+        for inputs in self.inputs:
+            self._set_inputs(inputs)
+            self.find_holdings()
+            self._find_initial_values()
+            self._find_yearly_prices()
+            self._rebalance_holdings()
+            self._check_rebalancing()
+            self._find_daily_values()
+            self._calc_comparison()
+            self._save_daily_values()
         self.visualize()
 
 
@@ -165,5 +177,4 @@ portfolios = [
     {'SPY':90, 'TLT':10}
 ]
 
-for port in portfolios:
-    portfolio(port)
+port = portfolio(portfolios)
