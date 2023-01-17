@@ -135,6 +135,13 @@ class portfolio:
         for asset in assets.keys():
             ax.plot(self.prices[asset] * assets[asset])
         ax.legend(['Non-Weighted', 'Weighted'] + list(assets.keys()))
+
+        names = str(self.weights.index[:]) 
+        r = str(self.weights.values)
+        names = names.strip("Index([], dtype)='object'").replace("', '", ":")
+        r = r.strip('[]').replace(' ', ':')
+        
+        plt.suptitle(names+' '+r)
         plt.show()
 
     def execute(self):
