@@ -84,8 +84,12 @@ ax[1].plot(weighted_prices)
 plt.legend(weighted_prices.columns)
 plt.show()
 
-holdings = invested * weights / prices.iloc[0,:]
-holdings = holdings.astype('int')
+holdings = invested * weights/weights.sum() / prices.iloc[0,:]
+holdings = holdings.round().astype('int')
+diff = (weights/weights.sum() - holdings*prices.iloc[0,:]/(holdings*prices.iloc[0,:]).sum())*100
+if any(diff > 1):
+    print('Warning: the following shows discrepancies in the designated asset allocation\n')
+    print(diff.loc[diff>1])    
 holdings = holdings.to_frame(name=pd.Timestamp(start))
 holdings = holdings.T
 
@@ -307,5 +311,33 @@ ax[1,1].set_title('Each Asset FX Included')
 plt.ticklabel_format(style='plain')
 ax[0,1].legend(daily_portfolio_values.columns)
 ax[1,1].legend(daily_portfolio_values.columns)
+fig.tight_layout()
 plt.suptitle('All Weather Portfolio')
 plt.show()
+
+x = np.arange(len(yearly_ret.index))
+width = 0.4
+rects = {}
+fig1, ax1 = plt.subplots(1, layout='constrained')
+for n, asset in enumerate(yearly_ret.columns):
+    rects[asset] = ax1.bar(x+width/len(x)*n, yearly_ret[asset]*100, width, label=asset)
+ax1.set_ylabel('Annual Returns (%)')
+ax1.set_xlabel('Years')
+ax1.set_xticks(x, yearly_ret.index.year)    
+plt.xticks(rotation=45)
+ax1.legend(yearly_ret.columns)
+# for asset in yearly_ret.columns:
+#     ax1.bar_label(rects[asset])
+fig.tight_layout()
+plt.suptitle('All Weather Portfolio - Each Asset Annual Returns')
+plt.show()
+
+fig2, ax2 = plt.subplots(1, layout='constrained')
+ax2.bar(yearly_ret.index.year, yearly_ret.sum(axis='columns')*100)
+ax2.set_ylabel('Annual Returns (%)')
+ax2.set_xlabel('Years')
+plt.xticks(rotation=45)
+fig.tight_layout()
+plt.suptitle('All Weather Portfolio - Total Asset Annual Returns')
+plt.show()
+yearly_ret.sum(axis='columns')*100
