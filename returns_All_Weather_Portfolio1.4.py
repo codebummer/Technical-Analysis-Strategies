@@ -205,7 +205,8 @@ allocation_diff.loc[allocation_diff.values>1][allocation_diff>1]
 
 days = []
 for year in years:
-    days.append(holdings.loc[holdings.index.year==year].index[0].day_of_year)
+    # days.append(holdings.loc[holdings.index.year==year].index[0].day_of_year)
+    days.append(len(holdings.loc[holdings.index.year==year]))
 days = pd.Series(days, index=years)
 
 holdings_ratio = pd.DataFrame()
