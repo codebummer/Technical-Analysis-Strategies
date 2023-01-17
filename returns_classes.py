@@ -17,37 +17,40 @@ class portfolio:
         self.invested = 10_000
         self.weights = stocks       
 
-        self.years = tuple(range(self.start.year, self.end.year+1))    
-        self.days = self.find_days()
+        self.years = tuple(range(self.start.year, self.end.year+1))  
 
         self.prices = self.get_prices(self.weights)
-        self.weights = pd.DataFrame(self.weights)
+        self.days = self.find_days()
+
+        self.weights = pd.Series(self.weights)
         self.FX = self.get_prices({'KRW=X':'USD/KRW'})
+
+        self.execute()
 
     def get_prices(self, stocks):
         df = pd.DataFrame([])
         for ticker, stock in stocks.items():
-            df[ticker] = (web.get_data_yahoo(ticker, start, end)['Close'])
+            df[ticker] = (web.get_data_yahoo(ticker, self.start, self.end)['Close'])
         return df
     
     def find_days(self):
         days = []
         for year in self.years:
-            days.append(len(holdings.loc[holdings.index.year==year]))
-        return pd.Series(days, index=years)        
+            days.append(len(self.prices.loc[self.prices.index.year==year]))
+        return pd.Series(days, index=self.years)        
 
     def find_holdings(self):
         self.holdings = self.invested * self.weights/self.weights.sum() / self.prices.iloc[0,:]
-        self.holdings = holdings.round().astype('int')
+        self.holdings = self.holdings.round().astype('int')
         diff = (self.weights/self.weights.sum() - self.holdings*self.prices.iloc[0,:]/(self.holdings*self.prices.iloc[0,:]).sum())*100
         if any(diff > 1):
             print('Warning: the following shows discrepancies in the designated asset allocation\n')
             print(diff.loc[diff>1])    
-        self.holdings = self.holdings.to_frame(name=pd.Timestamp(start))
+        self.holdings = self.holdings.to_frame(name=pd.Timestamp(self.start))
         self.holdings = self.holdings.T       
 
     def _find_yearly_prices(self):
-        self.yearly_prices = pd.DataFrame(prices.iloc[0,:], columns=[prices.index[0]])
+        self.yearly_prices = pd.DataFrame(self.prices.iloc[0,:], columns=[self.prices.index[0]])
         for year in self.years:
             self.yearly_prices = pd.concat([self.yearly_prices, self.prices.loc[self.prices.index.year==year].iloc[-1,:]], axis='columns')
         self.yearly_prices = self.yearly_prices.T    
@@ -131,7 +134,7 @@ class portfolio:
         ax.plot(self.daily_portfolio_values.sum(axis='columns'))
         for asset in assets.keys():
             ax.plot(self.prices[asset] * assets[asset])
-        ax.legend(['Non-Weighted', 'Weighted'] + list(assets.keys())
+        ax.legend(['Non-Weighted', 'Weighted'] + list(assets.keys()))
         plt.show()
 
     def execute(self):
@@ -156,4 +159,4 @@ portfolios = [
 ]
 
 for port in portfolios:
-    portfollio(port)
+    portfolio(port)
