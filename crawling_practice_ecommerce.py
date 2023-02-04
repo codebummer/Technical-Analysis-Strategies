@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 import requests
@@ -6,6 +7,8 @@ from bs4 import BeautifulSoup
 import time, warnings
 from tqdm.notebook import tqdm
 from datetime import datetime
+# import openpyxl
+# from openpyxl.styles import numbers
 import re
 warnings.simplefilter('ignore')
 
@@ -53,4 +56,5 @@ for page in range(1,5):
     time.sleep(1)
         
 results = pd.DataFrame(results)
-results.iloc[:,1:]
+results['등록일'] = [datetime.strftime(date,'%Y-%m-%d') for date in results['등록일']]
+results.to_excel('NAVER_SHOPPING_애플.xls')
