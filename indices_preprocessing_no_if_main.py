@@ -155,14 +155,14 @@ show_len(iso_ranged)
 date_range(iso_ranged)
 show_columns(iso_ranged)
 
-# pull only 'Close' values from the dictionary with multiple dataframes and make them one dataframe
+# pull only 'Close' values from the dictionary with multiple dataframes 
 iso_columned = pull_isocolumn(iso_ranged, 'Close')
 pprint(iso_columned)
 show_len(iso_columned)
 date_range(iso_columned)
 show_columns(iso_columned)
 
-# keep data only with same dates as KOSPI value dates
+# keep data only with same dates as KOSPI value dates and make them one dataframe
 isodated = make_isodate(iso_columned, iso_columned['KOSPI'].index)
 isodated.info()
 isodated.describe()
@@ -170,6 +170,19 @@ isodated.corr()
 
 sns.heatmap(isodated)
 plt.savefig('./indices_heatmap.png')
+plt.show()
+
+nadropped = isodated
+nadropped = nadropped.dropna()
+nadropped.info()
+sns.heatmap(nadropped)
+plt.show()
+
+sns.barplot(nadropped)
+plt.show()
+
+sns.boxplot(iso_columned)
+plt.show()
 
 sns.pairplot(isodated)
 plt.savefig('./indices_pairplot.png')
