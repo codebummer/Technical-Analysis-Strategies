@@ -9,27 +9,92 @@ from datetime import datetime
 import json
 from tqdm import tqdm
 
-with open('./oil_price_history.json','r') as file:
-    oil = json.loads(file.read())
+def show_info(df):
+    for key, value in df.items():
+        print(key)
+        value.info()
+        print('\n')
 
-crude = {'Date':[], 'Close':[]}
-for daily in oil:
-    crude['Date'].append(datetime.strptime(daily['date'],'%Y-%m-%d'))
-    crude['Close'].append(float(daily['close']))       
-crude = pd.DataFrame(crude['Close'], index=crude['Date'])
+def macrotrends_data():
+    from bs4 import BeautifulSoup
+    import selenium
+    import requests
+
+    url = 'https://www.macrotrends.net/assets/php/chart_iframe_comp.php?id=1333&url=historical-gold-prices-100-year-chart'
+    with requests.get(url) as page:
+        source = BeautifulSoup(page.text)
+
+    scripts = source.find_all('script', type='text/javascript')
+    script = scripts[5]
+    script.find('var', 'originalData')
+
+def crude_data():
+    with open('./oil_price_history.json','r') as file:
+        oil = json.loads(file.read())
+
+    crude = {'Date':[], 'Close':[]}
+    for daily in oil:
+        crude['Date'].append(datetime.strptime(daily['date'],'%Y-%m-%d'))
+        crude['Close'].append(float(daily['close'])) 
+
+    return pd.DataFrame(crude['Close'], index=crude['Date'], columns=['CRUDE'])
+
+def dxy_data():
+    with open('./DXY.json', 'r') as file:
+        dxy = json.loads(file.read())
+    
+    DXY = {'Date':[], 'Close':[]}
+    for daily in dxy:
+        DXY['Date'].append(datetime.strptime(daily['date'], '%Y-%m-%d'))
+        DXY['Close'].append(float(daily['close']))
+    return pd.DataFrame(DXY['Close'], index=DXY['Date'], columns=['DXY'])
+
+def gold_data():
+    with open('./gold.json', 'r') as file:
+        gold = json.loads(file.read())
+    
+    GOLD = {'Date':[], 'Close':[]}
+    for daily in gold:
+        GOLD['Date'].append(datetime.strptime(daily['date'], '%Y-%m-%d'))
+        GOLD['Close'].append(float(daily['close']))
+    return pd.DataFrame(GOLD['Close'], index=GOLD['Date'], columns=['GOLD'])
 
 
-def get_data(ticker, start):
-    return pdr.get_data_stooq(ticker, start, datetime.today())['Close']
+def stooq_data(ticker, start):
+    return pdr.get_data_stooq(ticker, start, datetime.today())
+
+def yahoo_data(ticker, start):
+    return pdr.get_data_yahoo(ticker, start, datetime.today())
+
+crude = crude_data()
+dxy = dxy_data()
+gold = gold_data()
+
 
 start = datetime(1946, 1, 1)
-lists = {'KOSPI':'^KOSPI', 'KOR10Y':'10KRY.B', 'KORM2':'M2SYKR.M', 
-         'CNY/KRW':'CNYKRW', 'JPY/KRW':'JPYKRW', 'USD/KRW':'USDKRW', 'DXY':'DX.F',
-         'S&P500':'^SPX', 'NASDAQ':'^NDQ', 'US10Y':'10USY.B', 'US2Y':'2USY.B', 
-         'GOLD':'XAUUSD'}
-
+# 'KORM2':'M2SYKR.M' M2 is not vailable
+stooq = {'KOSPI':'^KOSPI', 'KOR10Y':'10KRY.B', 
+         'S&P500':'^SPX', 'NASDAQ':'^NDQ', 'US10Y':'10USY.B', 'US2Y':'2USY.B'}       
 data = {}
-for key in lists.keys():
-    data[key] = pd.DataFrame()
-for key in tqdm(lists):
-    data[key] = get_data('^KOSPI', start).sort_index(ascending=False, inplace=True)
+for key, value in tqdm(stooq.items()):
+    data[key] = stooq_data(value, start)
+
+yahoo = {'JPY/KRW':'JPYKRW=X', 'USD/KRW':'KRW=X', 'EUR/KRW':'EURKRW=X', 'USD/CNY':'CNY=X'}
+for key, value in tqdm(yahoo.items()):
+    data[key] = yahoo_data(value, start)
+
+data['DXY'] = dxy
+data['GOLD'] = gold
+data['CRUDE'] = crude
+
+# sort
+for key in data.keys():
+    data[key].sort_index(ascending=True, inplace=True)
+
+show_info(data)
+
+for key, value in data.items():
+    print(key, ': ', len(value))
+
+for key, value in data.items():
+    print(key, ': ', value.index[0], '  ', value.index[-1])
