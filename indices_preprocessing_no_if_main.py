@@ -181,7 +181,7 @@ plt.show()
 sns.barplot(nadropped)
 plt.show()
 
-sns.boxplot(iso_columned)
+sns.boxplot(isodated)
 plt.show()
 
 sns.pairplot(isodated)
