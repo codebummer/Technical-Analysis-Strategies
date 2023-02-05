@@ -170,7 +170,7 @@ isodated.describe()
 isodated.corr()
 
 sns.heatmap(isodated)
-plt.show()
+plt.savefig('./indices_heatmap.png')
 
 sns.pairplot(isodated)
-plt.show()
+plt.savefig('./indices_pairplot.png')
