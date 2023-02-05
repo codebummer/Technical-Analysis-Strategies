@@ -55,19 +55,45 @@ def main():
     date_range(iso_columned)
     show_columns(iso_columned)
 
+    # make an isoindex Series by combining all indices from all dataframes
+    isoindex = make_isoindex(iso_columned)
+    len(isoindex)
+
     # keep data only with same dates as KOSPI value dates and make them one dataframe
-    isodated = make_isodate(iso_columned, iso_columned['KOSPI'].index)
+    # isodated = make_isodate(iso_columned, iso_columned['KOSPI'].index)
+    isodated = make_isodate(iso_columned, isoindex)
+    isodated = pd.concat([isodated.iloc[:,:-3].fillna(method='ffill'), isodated.iloc[:,-3:]], axis='columns')
     isodated.info()
     isodated.describe()
     isodated.corr()
 
-    sns.heatmap(isodated)
+    # for fancy indexing, make columns lists
+    bonds = ['KOR10Y', 'US10Y', 'US2Y']
+    stocks = ['KOSPI', 'S&P500', 'NASDAQ']
+    fx = ['USD/KRW', 'USD/CNY', 'EUR/KRW', 'JPY/KRW']
+    smalldata = ['CRUDE', 'DXY', 'GOLD']
+
+    sns.heatmap(isodated.corr(), annot=True)
     plt.savefig('./indices_heatmap.png')
+    plt.show()
+
+    plots(sns.barplot, isodated, 'barplot')
+    plots(sns.boxplot, isodated, 'boxplot')
+    plots(sns.pairplot, isodated, 'pairplot')
 
     sns.pairplot(isodated)
     plt.savefig('./indices_pairplot.png')
-
-
+    plt.show()
+    
+def plots(plot, df, file):
+    bonds = ['KOR10Y', 'US10Y', 'US2Y']
+    stocks = ['KOSPI', 'S&P500', 'NASDAQ']
+    fx = ['USD/KRW', 'USD/CNY', 'EUR/KRW', 'JPY/KRW']
+    smalldata = ['CRUDE', 'DXY', 'GOLD']
+    for asset, cols in {'bonds':bonds, 'stocks':stocks, 'fx':fx, 'smalldata':smalldata}.items():
+        plot(df[cols], palette='Blues')
+        plt.savefig(f'./{asset}_{file}.png')
+    
 def show_info(dic):
     for key, value in dic.items():
         print(key)
@@ -120,6 +146,13 @@ def pull_isocolumn(dic, column):
         except:
             add[key] = dic[key]
     return add
+
+def make_isoindex(dic):
+    isoindex = set()
+    for df in dic.values():
+        for elem in df.index:
+            isoindex.add(elem)
+    return pd.Series(list(isoindex), name='Date').sort_values()
 
 def to_sqlite3(df, name):
     with sqlite3.connect(f'./{name}.db') as db:
