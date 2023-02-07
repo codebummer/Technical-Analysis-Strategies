@@ -24,8 +24,9 @@ for year in df.index.year:
     yearly = df.loc[df.index.year==year]
     for cumprod, asset in zip(cumprods, assets):
         yearly[cumprod] = yearly[asset].divide(100).add(1).cumprod()
-        yearly[cumprod+'0'] = [yearly[cumprod].values[0] for _ in range(len(yearly))]
-        yearly[cumprod+'R'] = (yearly[cumprod]/yearly[cumprod+'0'])**(1/yearly.index.month) - 1
+        # yearly[cumprod+'0'] = [yearly[cumprod].values[0] for _ in range(len(yearly))]
+        # yearly[cumprod+'R'] = (yearly[cumprod]/yearly[cumprod+'0'])**(1/yearly.index.month) - 1
+        yearly[cumprod+'R'] = (yearly[cumprod]/yearly[cumprod].values[0])**(1/yearly.index.month) - 1
     annual = pd.concat([annual, yearly[assets+cumprods+returns]])    
 
 ret = annual[returns]
