@@ -73,9 +73,25 @@ plt.show()
 # sns.lineplot(annual_easy.mean(axis='columns'))
 # plt.show()
 
+# weighted annual returns
+weights = [0.2, 0.25, 0.05, 0.05, 0.25, 0.05, 0.15]
+sum(weights)
+
+weight_matrix = {}
+for idx, key in enumerate(annual_easy.columns):
+    weight_matrix[key] = np.array([weights for _ in range(len(annual_easy))]).T[idx]
+weight_matrix = pd.DataFrame(weight_matrix, index=annual_easy.index)
+weighted = annual_easy*weight_matrix
+sns.lineplot(weighted.sum(axis='columns'))
+plt.show()
+
+# total returns and total weighted returns
 total = df[assets]
 total = total.divide(100).add(1).cumprod()
+total_weighted = total*weight_matrix
+total_weighted.sum(axis='columns')
 sns.lineplot(total.mean(axis='columns'))
+sns.lineplot(total_weighted.sum(axis='columns'))
 plt.show()
 
 # gather all December stats for annual stats
@@ -83,6 +99,10 @@ decembers = ret.loc[ret.index.month==12]
 decembers.sum()
 decembers.sum(axis='columns')
 
+# alternative way to implement the above
+ret.groupby(ret.index.month).get_group(12)
+
+# plotting
 sns.boxplot(decembers.sum(axis='columns'),palette='Blues')
 plt.savefig('annual.png')
 sns.boxplot(decembers.sum())
