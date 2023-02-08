@@ -55,11 +55,22 @@ for year in tqdm(df.index.year):
     annual = pd.concat([annual, yearly[assets+cumprods+returns]])    
 
 ret = annual[returns]
+sns.lineplot(annual[cumprods].mean(axis='columns'))
+
+plt.show()
+
 
 # alternative way to implement the above
 df.groupby(df.index.year)[assets].apply(lambda x:x)
-annual_easy = df.groupby(df.index.year)[assets].apply(lambda x:x).divide(100).add(1).cumprod()
-annual_easy[assets]
+annual_easy = []
+df.groupby(df.index.year)[assets].apply(lambda x:annual_easy.append(x))
+for idx in range(len(annual_easy)):
+    annual_easy[idx] = annual_easy[idx].divide(100).add(1).cumprod()
+for yearly in annual_easy:
+    sns.lineplot(yearly)
+plt.show()
+# The following does not generate the right values.
+# annual_easy = df.groupby(df.index.year)[assets].apply(lambda x:x).divide(100).add(1).cumprod()
 sns.lineplot(annual_easy.mean(axis='columns'))
 plt.show()
 
