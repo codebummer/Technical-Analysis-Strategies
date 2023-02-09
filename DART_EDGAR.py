@@ -91,5 +91,5 @@ for file in tqdm(files):
         # cik = '0'*(10-len(str(company['cik']))) + str(company['cik'])
         nyse[company['cik']] = company['entityName']        
 
-with open('D:\myprojects\MarketDB\nyse_list.json', 'w') as file:
+with open(r'D:\myprojects\MarketDB\nyse_list.json', 'w') as file:
     json.dump(nyse, file)
