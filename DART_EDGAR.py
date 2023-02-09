@@ -62,6 +62,15 @@ with sqlite3.connect('./MarketDB/fins_2022_Q1.db') as db:
 # collect all listed company names that have financial data
 listed_corps = [table[1].split('_')[0] for table in tables]
 
+stocks_info = {}
+fields = ['주식총수', '배당', '조건부자본증권미상환', '회사채미상환', '단기사채미상환', '미등기임원보수']
+for corp in tqdm(listed_corps):
+    for field in fields:
+        if corp not in stocks_info.keys():
+            stocks_info[corp] = [dart.report(corp, field)]
+        else:
+            stocks_info[corp].append(dart.report(corp, field))
+
 # EDGAR 
 edge = webdriver.Edge()
 edge.get('https://www.sec.gov/Archives/edgar/daily-index/xbrl/companyfacts.zip')
@@ -71,6 +80,16 @@ with zipfile.ZipFile(r'C:\Users\ACECOM\Downloads\companyfacts.zip') as zip:
     zip.extractall(r'D:\myprojects\MarketDB\companyfacts')
 os.remove(r'C:\Users\ACECOM\Downloads\companyfacts.zip')
 
-with open(r'D:\myprojects\MarketDB\companyfacts\CIK0000001750.json') as opened:
-    file = json.load(opened)
-file['entityName']
+# make a list of all listed companies
+nyse = {}
+files = os.listdir(r'D:\myprojects\MarketDB\companyfacts')
+for file in tqdm(files):
+    with open(r'D:\myprojects\MarketDB\companyfacts\\'+file, encoding='utf-8') as opened:
+        company = json.load(opened)
+        if len(company) == 0:
+            continue
+        # cik = '0'*(10-len(str(company['cik']))) + str(company['cik'])
+        nyse[company['cik']] = company['entityName']        
+
+with open('D:\myprojects\MarketDB\nyse_list.json', 'w') as file:
+    json.dump(nyse, file)
