@@ -37,8 +37,9 @@ corps = corps.drop(remove)
 
 dart = OpenDartReader(CERT_KEY)
 # reports = {'1분기보고서':'11013', '반기보고서':'11012', '3분기보고서':'11014', '사업보고서':'11011'}
-reports = {'3분기보고서':'11014'}
-for corp in corps['corp_name']:
+reports = {'1분기보고서':'11013'}
+for corp in listed_corps:
+# for corp in corps['corp_name']:
 # for corp in corps['corp_name'].values[remove[0]:]:
     # for year in range(2022, 2014, -1):
     year = 2022
@@ -50,11 +51,11 @@ for corp in corps['corp_name']:
             time.sleep(0.5)
             continue
         if len(add) != 0:
-            with sqlite3.connect('./MarketDB/fins.db') as db:
+            with sqlite3.connect('./MarketDB/fins_2022_Q1.db') as db:
                 add.to_sql(corp+'_'+title, db, if_exists='replace', index=False)
             # dart.finstate_all(code, 2021, report, 'OFS')
 
-with sqlite3.connect('./MarketDB/fins.db') as db:
+with sqlite3.connect('./MarketDB/fins_2022_Q1.db') as db:
     query = '''SELECT * FROM sqlite_master WHERE type='table';'''
     tables = db.cursor().execute(query).fetchall()
 
