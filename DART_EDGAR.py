@@ -36,6 +36,14 @@ corps = corps.reset_index().drop('index', axis='columns')
 corps = corps.drop(remove)
 
 dart = OpenDartReader(CERT_KEY)
+
+with sqlite3.connect('./MarketDB/fins_2022_Q1.db') as db:
+    query = '''SELECT * FROM sqlite_master WHERE type='table';'''
+    tables = db.cursor().execute(query).fetchall()
+
+# collect all listed company names that have financial data
+listed_corps = [table[1].split('_')[0] for table in tables]
+
 # reports = {'1분기보고서':'11013', '반기보고서':'11012', '3분기보고서':'11014', '사업보고서':'11011'}
 reports = {'1분기보고서':'11013'}
 for corp in listed_corps:
@@ -55,12 +63,6 @@ for corp in listed_corps:
                 add.to_sql(corp+'_'+title, db, if_exists='replace', index=False)
             # dart.finstate_all(code, 2021, report, 'OFS')
 
-with sqlite3.connect('./MarketDB/fins_2022_Q1.db') as db:
-    query = '''SELECT * FROM sqlite_master WHERE type='table';'''
-    tables = db.cursor().execute(query).fetchall()
-
-# collect all listed company names that have financial data
-listed_corps = [table[1].split('_')[0] for table in tables]
 
 stocks_info = {}
 fields = ['주식총수', '배당', '조건부자본증권미상환', '회사채미상환', '단기사채미상환', '미등기임원보수']
@@ -70,6 +72,7 @@ for corp in tqdm(listed_corps):
             stocks_info[corp] = [dart.report(corp, field, 2022)]
         else:
             stocks_info[corp].append(dart.report(corp, field, 2022))
+        time.sleep(0.5)
 
 # EDGAR 
 edge = webdriver.Edge()
