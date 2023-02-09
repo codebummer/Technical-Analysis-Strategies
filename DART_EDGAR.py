@@ -67,9 +67,9 @@ fields = ['주식총수', '배당', '조건부자본증권미상환', '회사채
 for corp in tqdm(listed_corps):
     for field in fields:
         if corp not in stocks_info.keys():
-            stocks_info[corp] = [dart.report(corp, field)]
+            stocks_info[corp] = [dart.report(corp, field, 2022)]
         else:
-            stocks_info[corp].append(dart.report(corp, field))
+            stocks_info[corp].append(dart.report(corp, field, 2022))
 
 # EDGAR 
 edge = webdriver.Edge()
@@ -83,13 +83,14 @@ os.remove(r'C:\Users\ACECOM\Downloads\companyfacts.zip')
 # make a list of all listed companies
 nyse = {}
 files = os.listdir(r'D:\myprojects\MarketDB\companyfacts')
-for file in tqdm(files):
+for file in tqdm(files[14618:]):
     with open(r'D:\myprojects\MarketDB\companyfacts\\'+file, encoding='utf-8') as opened:
         company = json.load(opened)
-        if len(company) == 0:
-            continue
         # cik = '0'*(10-len(str(company['cik']))) + str(company['cik'])
-        nyse[company['cik']] = company['entityName']        
+        try:
+            nyse[company['cik']] = company['entityName']       
+        except:
+            continue 
 
 with open(r'D:\myprojects\MarketDB\nyse_list.json', 'w') as file:
     json.dump(nyse, file)
