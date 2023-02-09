@@ -33,16 +33,18 @@ corps = pd.read_xml('./MarketDB/corpCode/CORPCODE.xml')
 corps.dropna(inplace=True)
 corps = corps.reset_index().drop('index', axis='columns')
 # remove = corps.index[corps['corp_name']=='루트원플러스']
-corps = corps.drop(remove)
+# corps = corps.drop(remove)
 
-dart = OpenDartReader(CERT_KEY)
-
+# Read the prior database downloaded 
 with sqlite3.connect('./MarketDB/fins_2022_Q1.db') as db:
     query = '''SELECT * FROM sqlite_master WHERE type='table';'''
     tables = db.cursor().execute(query).fetchall()
 
 # collect all listed company names that have financial data
 listed_corps = [table[1].split('_')[0] for table in tables]
+
+# instantiate the Open DART class
+dart = OpenDartReader(CERT_KEY)
 
 # reports = {'1분기보고서':'11013', '반기보고서':'11012', '3분기보고서':'11014', '사업보고서':'11011'}
 reports = {'1분기보고서':'11013'}
@@ -54,6 +56,7 @@ for corp in listed_corps:
     for title, report in reports.items():
         try:
             add = dart.finstate_all(corp, year, report)
+            # without time.sleep(0.5), an error will occur
             time.sleep(0.5)
         except:
             time.sleep(0.5)
@@ -72,6 +75,7 @@ for corp in tqdm(listed_corps):
             stocks_info[corp] = [dart.report(corp, field, 2022)]
         else:
             stocks_info[corp].append(dart.report(corp, field, 2022))
+        # without time.sleep(0.5), an error will occur
         time.sleep(0.5)
 
 # EDGAR 
@@ -93,7 +97,7 @@ for file in tqdm(files[14618:]):
         try:
             nyse[company['cik']] = company['entityName']       
         except:
-            continue 
+            continue
 
 with open(r'D:\myprojects\MarketDB\nyse_list.json', 'w') as file:
     json.dump(nyse, file)
