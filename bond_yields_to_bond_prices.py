@@ -20,3 +20,15 @@ def calc_bond_price(assgined_amount, yields):
     # fill the first row which got empty after pct_change() with the initial fixed income amount at the time of purchase
     bond_prices[0] = fixed_income
     return bond_prices
+
+# The following(groupby() operation) is a lot slowwer than the below (loc operation)
+bond_prices = pd.Series()
+for year in tqdm(assets.index.year):
+    add = calc_bond_price(invested*weights['US10Y'], assets['US10Y'].groupby(assets.index.year).get_group(year))
+    bond_prices = pd.concat([bond_prices, add])
+
+# Use the following, because it's faster
+bond_prices = pd.Series()
+for year in tqdm(assets.index.year):
+    add = calc_bond_price(invested*weights['US10Y'], assets['US10Y'].loc[assets.index.year==year])
+    bond_prices = pd.concat([bond_prices, add])
