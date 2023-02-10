@@ -36,3 +36,11 @@ bond_prices = pd.Series()
 for year in tqdm(list(set(assets.index.year))):
     add = calc_bond_price(invested*weights['US10Y'], assets['US10Y'].loc[assets.index.year==year])
     bond_prices = pd.concat([bond_prices, add])
+
+# bond prices when annually reinvested with past years' yearend prices 
+bond_prices_reinvested = pd.Series()
+bond_reinvest = invested * weights['US10Y']
+for year in tqdm(list(set(assets.index.year))):
+    add = calc_bond_price(bond_reinvest, assets['US10Y'].groupby(assets.index.year).get_group(year))
+    bond_prices_reinvested = pd.concat([bond_prices_reinvested, add])
+    bond_reinvest = bond_prices_reinvested[-1]
