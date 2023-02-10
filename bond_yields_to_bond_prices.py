@@ -15,4 +15,8 @@ def calc_bond_price(assgined_amount, yields):
     # * -1(to apply the negative relationship between bond prices and bond yields) 
     # + 1(to include the principal) ] * the initial fixed income amount at the time of purchase
     # Note: pandas.DataFrame.pct_change() does not generate changes in percent, but in decimal digits.
-    return yields.pct_change().multiply(-1).add(1) * fixed_income 
+    bond_prices = yields.pct_change().multiply(-1).add(1) * fixed_income
+    
+    # fill the first row which got empty after pct_change() with the initial fixed income amount at the time of purchase
+    bond_prices[0] = fixed_income
+    return bond_prices
