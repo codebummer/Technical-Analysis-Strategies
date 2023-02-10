@@ -115,7 +115,7 @@ for yearend in yearly_prices.index:
     
     # The rebalancing algorithm is as follow:
     # 1. find off values = calculate prices lower or higher than allocation plans
-    #   off values = yearend prices - yearend prices * allocation ratio
+    #   off values = yearend prices - sum of yearend prices * allocation ratio
     off_values = values.loc[yearend] - weights/100*values.loc[yearend].sum()
     
     # 2. find off quantities = calculate asset quantities lower or higher than allocation plans, based on off values
