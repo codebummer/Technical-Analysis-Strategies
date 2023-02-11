@@ -7,7 +7,7 @@ import seaborn as sns
 from tqdm import tqdm
 
 class Benchmark():
-    def __init__(self,):
+    def __init__(self):
         self.start = datetime(1789, 5, 1)
         self.dic = self.downloads()
         self.dic = self.make_isoranged(self.dic)        
@@ -88,7 +88,7 @@ class Benchmark():
         '''
         def _yields_to_prices(assigned_amount, yields):
             # buying price = invest amount * (1 + yield rate)
-            fixed_income = assgined_amount * (yields.values[0]/100+1)
+            fixed_income = assigned_amount * (yields.values[0]/100+1)
             # calculate sequential prices = buy price * (1 + change rates in yields * -1)
             bond_prices = yields.pct_change().multiply(-1).add(1) * fixed_income        
             # fill the first row which got empty after pct_change() with the initial fixed income amount at the time of purchase
