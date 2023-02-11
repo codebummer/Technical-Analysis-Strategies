@@ -78,6 +78,39 @@ class Benchmark():
         df['USD'] = [1 for _ in range(len(df))]
         df.sort_index(inplace=True)
         return df        
+   
+    def calc_bond_price(self, invested, weight, yields, cumul=True):
+        '''
+        invested: total investment amount for all assets
+        weight: weight for bonds investment to total investment in the working investment strategy
+        yields: a pandas series or dataframe that holds daily bond yields with datetime.timestamp as index
+        cumul: if True, calculate bond prices, reinvesting in bonds, every period
+        '''
+        def _yields_to_prices(assigned_amount, yields):
+            # buying price = invest amount * (1 + yield rate)
+            fixed_income = assgined_amount * (yields.values[0]/100+1)
+            # calculate sequential prices = buy price * (1 + change rates in yields * -1)
+            bond_prices = yields.pct_change().multiply(-1).add(1) * fixed_income        
+            # fill the first row which got empty after pct_change() with the initial fixed income amount at the time of purchase
+            bond_prices[0] = fixed_income
+            return bond_prices
+
+        if cumul == False:
+            # make sure you don't loop through the entire list of (assets.index.year)
+            # just loop through list(set(assets.index.year))
+            bond_prices = pd.Series()
+            for year in tqdm(list(set(yields.index.year))):
+                add = _yields_to_prices(invested*weight, yields.groupby(yields.index.year).get_group(year))
+                bond_prices = pd.concat([bond_prices, add])
+        else:
+            # bond prices when annually reinvested with past years' yearend prices 
+            bond_prices = pd.Series()
+            bond_reinvest = invested * weight
+            for year in tqdm(list(set(yields.index.year))):
+                add = _yields_to_prices(bond_reinvest, yields.groupby(yields.index.year).get_group(year))
+                bond_prices = pd.concat([bond_prices, add])
+                bond_reinvest = bond_prices[-1]
+        return bond_prices
     
     def plot_returns(self, assets, dates, cumul=True):
         '''
@@ -103,4 +136,4 @@ class Benchmark():
                 else:
                     sns.lineplot(assets[asset].loc[dates[0]:dates[1]].pct_change())
         plt.legend(labels=assets)
-        plt.show()    
+        plt.show() 
