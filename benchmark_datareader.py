@@ -14,6 +14,10 @@ class Benchmark():
         self.assets = self.make_isodated_dataframe(self.dic, self.get_isoindex(self.dic))
         self.assets = self.clean_up(self.assets)
     
+    def get(self):
+        '''returns a cleaned-up dataframe which contains S&P500, US10Y, XAU/USD daily prices and yields from stooq.com'''
+        return self.assets
+
     def downloads(self):
         '''
         download S&P500, US10Y, XAU/USD from stooq.com and
