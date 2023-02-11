@@ -78,7 +78,30 @@ class Benchmark():
         df['USD'] = [1 for _ in range(len(df))]
         df.sort_index(inplace=True)
         return df        
-   
+    
+    def find_periods(self, df):
+        '''
+        gets a dataframe, indexed with datetime.timestamp, as an input, 
+        returns a list that contains tuple pairs of start and end dates for each year in the dataframe        
+        df: a dataframe of daily prices of assets, indexed with datetime.timestamp
+        '''
+        periods = []
+        for year in tqdm(list(set(df.index.year))):
+            dates = df.groupby(df.index.year).get_group(year).index
+            periods.append((dates[0],dates[-1]))        
+        return periods
+
+    def make_weight_matrix(self, period, holdings, assets):
+        '''
+        period: a tuple pair of start and end datetime.timestamp
+        holdings: holdings ratio by which the weight matrix is generated
+        assets: a dataframe which contains asset daily prices with date index from which the weight matrix will copy its date index
+        returns a dataframe which is a weight matrix for the given period
+        '''
+        start, end = period
+        dates = assets.loc[start:end].index
+        return pd.DataFrame([holdings.values for _ in  dates], index=dates, columns=holdings.index)    
+
     def yields_to_prices(self, invested, weight, yields, cumul=True):
         '''
         invested: total investment amount for all assets
