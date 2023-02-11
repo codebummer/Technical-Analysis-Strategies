@@ -20,7 +20,7 @@ us10y = benchmark.yields_to_prices(invested, weights['US10Y'], assets['US10Y'], 
 
 # make price matrix and weight matrix of the portfolio
 # initial amount of investment
-invested = 30_000
+invested = 300
 # weights for assets in ratio
 weights = pd.Series({'S&P500':0.3, 'US10Y':0.5, 'XAU/USD':0.15, 'USD':0.05}, name='Weights')
 
@@ -31,6 +31,7 @@ for year in tqdm(list(set(assets.index.year))):
 
 count = 0
 holdings = pd.Series({'S&P500':30, 'US10Y':50, 'XAU/USD':15, 'USD':5}, name='Holdings')
+assets['US10Y'] = benchmark.yields_to_prices(invested, weights['US10Y'], assets['US10Y'], False)
 
 # make weight matrix
 def make_weight_matrix(period, holdings, assets):
@@ -133,3 +134,14 @@ for start, end in tqdm(periods):
     
     # make a weight matrix and concatenate it 
     all_holdings = pd.concat([all_holdings, make_weight_matrix((start,end), holdings, assets)])
+
+
+
+returns = (all_holdings*assets).sum(axis='columns').pct_change().add(1).cumprod()
+sns.lineplot(returns)
+plt.ticklabel_format(style='plain', useOffse=False)
+plt.show()
+
+benchmark.
+
+benchmark.plot_returns((all_holdings*assets).sum(axis='columns'), [datetime(1871,1,1),datetime(2023,2,10)], False)
