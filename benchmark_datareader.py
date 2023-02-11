@@ -79,7 +79,7 @@ class Benchmark():
         df.sort_index(inplace=True)
         return df        
    
-    def calc_bond_price(self, invested, weight, yields, cumul=True):
+    def yields_to_prices(self, invested, weight, yields, cumul=True):
         '''
         invested: total investment amount for all assets
         weight: weight for bonds investment to total investment in the working investment strategy
