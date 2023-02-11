@@ -108,9 +108,14 @@ for yearend in yearly_prices.index:
     # yearly_prices.index[0] has the start date of the entire dataframe, so skip the rebalancing process for that day
     if yearend == yearly_prices.index[0]:
         continue
+        
+    # portfolio values at this period end = prices * numbers of stocks held from llast period end
+    # holdings here refers to numbers of stocks from the last period end (last update)    
     add_values = pd.DataFrame(yearly_prices.loc[yearend] * holdings.iloc[-1,:], columns=[yearend]).T
     values = pd.concat([values, add_values])
     
+    # numbers of stocks based on thid period end market prices = portfolio values / current stock prices
+    # holdings here refers to numbers of stocks based on the current market prices    
     add_holdings = values.loc[yearend]/yearly_prices.loc[yearend]
     holdings = pd.concat([holdings, add_holdings.round(decimals=1).astype('int').to_frame().T])
     
