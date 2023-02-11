@@ -2,6 +2,8 @@ import pandas as pd
 import pandas_datareader.data as pdr
 import numpy as np
 from datetime import datetime
+import matplotlib.pyplot as plt
+import seaborn as sns
 from tqdm import tqdm
 
 class Benchmark():
@@ -72,3 +74,29 @@ class Benchmark():
         df['USD'] = [1 for _ in range(len(df))]
         df.sort_index(inplace=True)
         return df        
+    
+    def plot_returns(self, assets, dates, cumul=True):
+        '''
+        assets: a dataframe that contains assets data to plot
+        dates: a list of datetime values that point to start and end dates. Both values should be idential in assets.index values. use [datetime(start date), datetime(end date)]
+        cumul: If True, plots cumulative product of changes in prices. If False, plots just changes in prices.
+        
+        to use this method easily, refer to the following example:
+        assets.groupby(assets.index.year).get_group(2020) : list the date index to find the exact dates            
+        plot_returns(assets[['S&P500', 'US10Y']], [datetime(2020,1,2),datetime(2020,12,31)], cumul=False)
+        
+        '''
+        if cumul == True:
+            for asset in assets.columns:
+                if asset == 'US10Y':
+                    sns.lineplot(assets[asset].loc[dates[0]:dates[1]].pct_change().multiply(-1).add(1).cumprod())
+                else:
+                    sns.lineplot(assets[asset].loc[dates[0]:dates[1]].pct_change().add(1).cumprod())
+        else:
+            for asset in assets.columns:
+                if asset == 'US10Y':
+                    sns.lineplot(assets[asset].loc[dates[0]:dates[1]].pct_change().multiply(-1))
+                else:
+                    sns.lineplot(assets[asset].loc[dates[0]:dates[1]].pct_change())
+        plt.legend(labels=assets)
+        plt.show()    
