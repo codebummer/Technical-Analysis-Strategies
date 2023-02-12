@@ -91,15 +91,42 @@ class Benchmark():
             periods.append((dates[0],dates[-1]))        
         return periods
 
-    def columns_except(self, takeouts, assets):
+    def columns_except(self, takeouts, assets, isdf=True):
         '''
         takeout: a list of column name(s) you want to remove from assets' daily price dataframe
-        assets: a dataframe of assets' daily prices
-        returns removing columns and the kept columns each in the list form
+        assets: a Dataframe or a Seriesof assets' daily prices
+        isdf: if True, assets is a dataframe and exeuctes dataframe.columns, 
+        if False, assets is a Series, executes Series.index, not execute .columns to avoid an error
+        returns (removing column labels, kept columns labels)
+        to return indices together change the return value in the form of 
+        (removing columns indices, removing column labels, kept columns indices, kept columns labels)
         '''
-        keepers = list(assets.columns)
-        for takeout in takeouts:
-            keepers.remove(takeout)        
+        if isdf == True:            
+            keepers = list(assets.columns)
+            if takeouts == keepers:
+                return takeouts, None
+            elif takeouts == [] or None:
+                return None, keepers
+            else:
+                keepers_index = list(range(len(assets.columns)))
+                takeouts_index = [keepers.index(takeout) for takeout in takeouts]
+                for takeout_index, takeout in zip(takeouts_index,takeouts):
+                    keepers_index.remove(takeout_index)
+                    keepers.remove(takeout)        
+        else:
+            keepers = list(assets.index)
+            if takeouts == keepers:
+                return takeouts, None
+            elif takeouts == [] or None:
+                return None, keepers
+            else:            
+                keepers = list(assets.index)
+                keepers_index = list(range(len(assets.index)))
+                takeouts_index = [keepers.index(takeout) for takeout in takeouts]
+                for takeout_index, takeout in zip(takeouts_index,takeouts):
+                    keepers_index.remove(takeout_index)
+                    keepers.remove(takeout)             
+        # return takeouts_index, takeouts, keepers_index, keepers
         return takeouts, keepers
 
     def make_weight_matrix(self, period, holdings, assets):
