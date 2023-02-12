@@ -91,6 +91,17 @@ class Benchmark():
             periods.append((dates[0],dates[-1]))        
         return periods
 
+    def columns_except(self, takeouts, assets):
+        '''
+        takeout: a list of column name(s) you want to remove from assets' daily price dataframe
+        assets: a dataframe of assets' daily prices
+        returns removing columns and the kept columns each in the list form
+        '''
+        keepers = list(assets.columns)
+        for takeout in takeouts:
+            keepers.remove(takeout)        
+        return takeouts, keepers
+
     def make_weight_matrix(self, period, holdings, assets):
         '''
         period: a tuple pair of start and end datetime.timestamp
@@ -102,10 +113,9 @@ class Benchmark():
         dates = assets.loc[start:end].index
         return pd.DataFrame([holdings.values for _ in  dates], index=dates, columns=holdings.index)    
 
-    def yields_to_prices(self, invested, weight, yields, cumul=True):
+    def yields_to_prices(self, unitprice, yields, cumul=True):
         '''
-        invested: total investment amount for all assets
-        weight: weight for bonds investment to total investment in the working investment strategy
+        unitprice: principal price or face value for one bond
         yields: a pandas series or dataframe that holds daily bond yields with datetime.timestamp as index
         cumul: if True, calculate bond prices, reinvesting in bonds, every period
         '''
@@ -123,12 +133,12 @@ class Benchmark():
             # just loop through list(set(assets.index.year))
             bond_prices = pd.Series()
             for year in tqdm(list(set(yields.index.year))):
-                add = _yields_to_prices(invested*weight, yields.groupby(yields.index.year).get_group(year))
+                add = _yields_to_prices(unitprice, yields.groupby(yields.index.year).get_group(year))
                 bond_prices = pd.concat([bond_prices, add])
         else:
             # bond prices when annually reinvested with past years' yearend prices 
             bond_prices = pd.Series()
-            bond_reinvest = invested * weight
+            bond_reinvest = unitprice
             for year in tqdm(list(set(yields.index.year))):
                 add = _yields_to_prices(bond_reinvest, yields.groupby(yields.index.year).get_group(year))
                 bond_prices = pd.concat([bond_prices, add])
