@@ -90,7 +90,7 @@ def make_holdings_matrix(weights, holdings, periods, assets):
     
     return holdings_matrix
 
-
+periods = find_periods(assets)
 holdings_matrix = make_holdings_matrix(weights, holdings, periods, assets)
 
 
