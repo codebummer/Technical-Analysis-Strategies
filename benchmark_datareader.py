@@ -236,12 +236,12 @@ class Benchmark():
         elif returns_periods == 'annual':    
             for start, end in tqdm(periods):
                 cumprods = pd.concat([cumprods, values_matrix.loc[start:end].pct_change().add(1).cumprod()])
-                returns = pd.concat([returns, cumprods])
+                returns = pd.concat([returns, cumprods.loc[start:end]])
         elif returns_periods == 'daily':
             for start, end in tqdm(periods):
                 cumprods = pd.concat([cumprods, values_matrix.loc[start:end].pct_change().add(1).cumprod()])
                 exp = pd.Series(cumprods.index.map(lambda x:1/x.timetuple().tm_yday), index=cumprods.index, name='1/Days')
-                returns = pd.concat([returns, cumprods.pow(exp, axis='index')])
+                returns = pd.concat([returns, cumprods.loc[start:end].pow(exp, axis='index')])
 
         return cumprods, returns
 
