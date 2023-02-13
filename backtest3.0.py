@@ -145,7 +145,7 @@ periods = find_periods(assets)
 holdings_matrix = make_holdings_matrix(weights, holdings, periods, assets)
 
 values_matrix = holdings_matrix*assets
-cumprods_matirx, returns_matrix = make_returns_matrix(periods, values_matrix)
+cumprods_matrix, returns_matrix = make_returns_matrix(periods, values_matrix)
 asset_returns, total_returns = returns_matrix_to_returns(periods, returns_matrix)
 
 allcum = all.pct_change().add(1).cumprod()
@@ -158,6 +158,8 @@ sns.lineplot(all.loc[datetime(1980,1,2):])
 sns.lineplot(returnscum[datetime(1980,1,2):])
 sns.lineplot(allcum.loc[datetime(1980,1,2):])
 sns.barplot(allcum.loc[datetime(1980,1,2):])
+sns.lineplot(total_returns.loc[datetime(1980,1,2):])
+sns.lineplot(cumprods_matrix.loc[datetime(1980,1,2):])
 
 sns.heatmap(assets.corr(), annot=True)
 plt.show()
