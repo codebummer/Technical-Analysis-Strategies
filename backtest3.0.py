@@ -15,11 +15,6 @@ asset values = price matrix * holdings matrix
 backtest the asset values
 '''
 
-# initial amount of investment
-invested = 30_000
-# weights for assets in ratio
-weights = pd.Series({'S&P500':0.3, 'US10Y':0.5, 'XAU/USD':0.15, 'USD':0.05}, name='Weights')
-
 benchmark = Benchmark()
 assets = benchmark.get()
 # benchmark.plot_returns(assets,[datetime(2018,1,2),datetime(2021,12,31)])
@@ -118,7 +113,7 @@ def make_returns_matrix(periods, values_matrix, returns_periods='annualcum'):
 
         cumprods = values_matrix.pct_change().add(1).cumprod()
         for start, end in tqdm(periods):            
-            returns = pd.concat([returns, cumprods.multiply(1/years[end.year], axis='index')]) 
+            returns = pd.concat([returns, cumprods.loc[start:end].multiply(1/years[end.year], axis='index')]) 
     elif returns_periods == 'annual':    
         for start, end in tqdm(periods):
             cumprods = pd.concat([cumprods, values_matrix.loc[start:end].pct_change().add(1).cumprod()])
@@ -141,8 +136,8 @@ def returns_matrix_to_returns(periods, returns_matrix):
     '''
     returns = pd.DataFrame()
     for start, end in tqdm(periods):
-        returns = pd.concat([returns, returns_matrix.loc[end]])
-    return returns.sum(), returns.sum(axis='columns')
+        returns = pd.concat([returns, returns_matrix.loc[end]], axis='columns')
+    return returns.T.sum(), returns.T.sum(axis='columns')
 
 
 
