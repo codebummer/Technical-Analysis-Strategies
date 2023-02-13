@@ -78,6 +78,39 @@ class Benchmark():
         df['USD'] = [1 for _ in range(len(df))]
         df.sort_index(inplace=True)
         return df        
+
+    def yields_to_prices(self, unitprice, yields, cumul=True):
+        '''
+        unitprice: principal price or face value for one bond
+        yields: a pandas series or dataframe that holds daily bond yields with datetime.timestamp as index
+        cumul: if True, calculate bond prices, reinvesting in bonds, every period
+        '''
+        def _yields_to_prices(assigned_amount, yields):
+            # buying price = invest amount * (1 + yield rate)
+            fixed_income = assigned_amount * (yields.values[0]/100+1)
+            # calculate sequential prices = buy price * (1 + change rates in yields * -1)
+            bond_prices = yields.pct_change().multiply(-1).add(1) * fixed_income        
+            # fill the first row which got empty after pct_change() with the initial fixed income amount at the time of purchase
+            bond_prices[0] = fixed_income
+            return bond_prices
+
+        if cumul == False:
+            # make sure you don't loop through the entire list of (assets.index.year)
+            # just loop through list(set(assets.index.year))
+            bond_prices = pd.Series()
+            for year in tqdm(list(set(yields.index.year))):
+                add = _yields_to_prices(unitprice, yields.groupby(yields.index.year).get_group(year))
+                bond_prices = pd.concat([bond_prices, add])
+        else:
+            # bond prices when annually reinvested with past years' yearend prices 
+            bond_prices = pd.Series()
+            bond_reinvest = unitprice
+            for year in tqdm(list(set(yields.index.year))):
+                add = _yields_to_prices(bond_reinvest, yields.groupby(yields.index.year).get_group(year))
+                bond_prices = pd.concat([bond_prices, add])
+                bond_reinvest = bond_prices[-1]
+        return bond_prices
+    
     
     def find_periods(self, df):
         '''
@@ -177,37 +210,53 @@ class Benchmark():
         
         return holdings_matrix
 
-    def yields_to_prices(self, unitprice, yields, cumul=True):
+    def make_returns_matrix(self, periods, values_matrix, returns_periods='annualcum'):
         '''
-        unitprice: principal price or face value for one bond
-        yields: a pandas series or dataframe that holds daily bond yields with datetime.timestamp as index
-        cumul: if True, calculate bond prices, reinvesting in bonds, every period
+        periods: Benchmark().find_periods generated start/end datetime pairs that indicate rebalancing periods
+        values_matrix: price matrix * holdings matrix (holdings matrix includes weights, so don't factor in weights again)
+        returns_periods: periods by which returns are calculated
+            "annualcum" generates entire period annual returns cumulated
+            "annual" generates annual returns just yearly, not cumulated
+            "daily" generates daily returns    
+        
+        returns both cumprods matrix and returns matrix 
+        if you want just returns, not returns matrix, use Benchmark().returns_matrix_to_returns()
         '''
-        def _yields_to_prices(assigned_amount, yields):
-            # buying price = invest amount * (1 + yield rate)
-            fixed_income = assigned_amount * (yields.values[0]/100+1)
-            # calculate sequential prices = buy price * (1 + change rates in yields * -1)
-            bond_prices = yields.pct_change().multiply(-1).add(1) * fixed_income        
-            # fill the first row which got empty after pct_change() with the initial fixed income amount at the time of purchase
-            bond_prices[0] = fixed_income
-            return bond_prices
+        cumprods = pd.DataFrame()
+        returns = pd.DataFrame()
 
-        if cumul == False:
-            # make sure you don't loop through the entire list of (assets.index.year)
-            # just loop through list(set(assets.index.year))
-            bond_prices = pd.Series()
-            for year in tqdm(list(set(yields.index.year))):
-                add = _yields_to_prices(unitprice, yields.groupby(yields.index.year).get_group(year))
-                bond_prices = pd.concat([bond_prices, add])
-        else:
-            # bond prices when annually reinvested with past years' yearend prices 
-            bond_prices = pd.Series()
-            bond_reinvest = unitprice
-            for year in tqdm(list(set(yields.index.year))):
-                add = _yields_to_prices(bond_reinvest, yields.groupby(yields.index.year).get_group(year))
-                bond_prices = pd.concat([bond_prices, add])
-                bond_reinvest = bond_prices[-1]
-        return bond_prices
+        if returns_periods == 'annualcum':
+            years = {}
+            for year, num in zip(set(values_matrix.index.year), range(1,len(values_matrix.index.year)+1)):
+                years[year] = num
+
+            cumprods = values_matrix.pct_change().add(1).cumprod()
+            for start, end in tqdm(periods):            
+                returns = pd.concat([returns, cumprods.multiply(1/years[end.year], axis='index')]) 
+        elif returns_periods == 'annual':    
+            for start, end in tqdm(periods):
+                cumprods = pd.concat([cumprods, values_matrix.loc[start:end].pct_change().add(1).cumprod()])
+                returns = pd.concat([returns, cumprods])
+        elif returns_periods == 'daily':
+            for start, end in tqdm(periods):
+                cumprods = pd.concat([cumprods, values_matrix.loc[start:end].pct_change().add(1).cumprod()])
+                exp = pd.Series(cumprods.index.map(lambda x:1/x.timetuple().tm_yday), index=cumprods.index, name='1/Days')
+                returns = pd.concat([returns, cumprods.multiply(exp, axis='index')])
+                
+        return cumprods, returns
+
+    def returns_matrix_to_returns(self, periods, returns_matrix):
+        '''
+        periods: Benchmark().find_periods generated start/end datetime pairs that indicate rebalancing periods
+        returns_matrix: Benchmark().make_returns_matrix() generated dataframe
+        
+        returns both each asset's respective returns and all assets' returns
+        '''
+        returns = pd.DataFrame()
+        for start, end in tqdm(periods):
+            returns = pd.concat([returns, returns_matrix.loc[end]])
+        return returns.sum(), returns.sum(axis='columns')
+    
     
     def plot_returns(self, assets, dates, cumul=True):
         '''
