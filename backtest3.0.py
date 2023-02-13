@@ -34,13 +34,19 @@ invested = 30_000
 # weights for assets in ratio
 weights = pd.Series({'S&P500':0.3, 'US10Y':0.5, 'XAU/USD':0.15, 'USD':0.05}, name='Weights')
 
-periods = []
-for year in tqdm(list(set(assets.index.year))):
-    dates = assets.groupby(assets.index.year).get_group(year).index
-    periods.append((dates[0],dates[-1]))
-
-count = 0
 holdings = pd.Series({'S&P500':30, 'US10Y':50, 'XAU/USD':15, 'USD':5}, name='Holdings')
+
+def find_periods(df):
+    '''
+    gets a dataframe, indexed with datetime.timestamp, as an input, 
+    returns a list that contains tuple pairs of start and end dates for each year in the dataframe        
+    df: a dataframe of daily prices of assets, indexed with datetime.timestamp
+    '''
+    periods = []
+    for year in tqdm(list(set(df.index.year))):
+        dates = df.groupby(df.index.year).get_group(year).index
+        periods.append((dates[0],dates[-1]))        
+    return periods
 
 # make weight matrix
 def make_weight_matrix(period, holdings, assets):
@@ -94,7 +100,7 @@ periods = find_periods(assets)
 holdings_matrix = make_holdings_matrix(weights, holdings, periods, assets)
 
 
-all = all_holdings*assets
+all = holdings_matrix*assets
 allcum = all.pct_change().add(1).cumprod()
 returns = all.sum(axis='columns')
 returnscum = returns.pct_change().add(1).cumprod()
