@@ -232,7 +232,7 @@ class Benchmark():
 
             cumprods = values_matrix.pct_change().add(1).cumprod()
             for start, end in tqdm(periods):            
-                returns = pd.concat([returns, cumprods.multiply(1/years[end.year], axis='index')]) 
+                returns = pd.concat([returns, cumprods.loc[start:end].multiply(1/years[end.year], axis='index')]) 
         elif returns_periods == 'annual':    
             for start, end in tqdm(periods):
                 cumprods = pd.concat([cumprods, values_matrix.loc[start:end].pct_change().add(1).cumprod()])
@@ -242,8 +242,9 @@ class Benchmark():
                 cumprods = pd.concat([cumprods, values_matrix.loc[start:end].pct_change().add(1).cumprod()])
                 exp = pd.Series(cumprods.index.map(lambda x:1/x.timetuple().tm_yday), index=cumprods.index, name='1/Days')
                 returns = pd.concat([returns, cumprods.multiply(exp, axis='index')])
-                
+
         return cumprods, returns
+
 
     def returns_matrix_to_returns(self, periods, returns_matrix):
         '''
@@ -254,8 +255,8 @@ class Benchmark():
         '''
         returns = pd.DataFrame()
         for start, end in tqdm(periods):
-            returns = pd.concat([returns, returns_matrix.loc[end]])
-        return returns.sum(), returns.sum(axis='columns')
+            returns = pd.concat([returns, returns_matrix.loc[end]], axis='columns')
+        return returns.T.sum(), returns.T.sum(axis='columns')
     
     
     def plot_returns(self, assets, dates, cumul=True):
