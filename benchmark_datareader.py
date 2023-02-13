@@ -5,6 +5,13 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
+import math
+import scipy.stats as scs
+import statsmodels.api as sm
+from pylab import mpl, plt
+
+plt.style.use('seaborn')
+mpl.rcParams['font.family'] = 'serif'
 
 class Benchmark():
     def __init__(self):
@@ -245,7 +252,6 @@ class Benchmark():
 
         return cumprods, returns
 
-
     def returns_matrix_to_returns(self, periods, returns_matrix):
         '''
         periods: Benchmark().find_periods generated start/end datetime pairs that indicate rebalancing periods
@@ -257,7 +263,40 @@ class Benchmark():
         for start, end in tqdm(periods):
             returns = pd.concat([returns, returns_matrix.loc[end]], axis='columns')
         return returns.T.sum(), returns.T.sum(axis='columns')
-    
+
+    def normality_tests(self, assets):
+        ''' Tests for normality distribution of given data set.
+        Parameters
+        ==========
+        assets: dataframe
+        object to generate statistics on
+        '''
+        for asset in assets:
+            '''asset should be input in the following fuctions as a ndarray'''
+            print('\n', asset)
+            print('Skew of data set %14.3f' % scs.skew(assets[asset].values))
+            print('Skew test p-value %14.3f' % scs.skewtest(assets[asset].values)[1])
+            print('Kurt of data set %14.3f' % scs.kurtosis(assets[asset].values))
+            print('Kurt test p-value %14.3f' % scs.kurtosistest(assets[asset].values)[1])
+            print('Norm test p-value %14.3f' % scs.normaltest(assets[asset].values)[1])
+
+    def graph_normality(self, assets, currencies):
+        '''
+        assets: dataframe for assets' daily prices
+        currencies: cash or currency assets' tickers in a list
+        graphically tests if a dataframe is normally distributed (Are returns of assets log normal?)
+        '''
+        cash, noncash = self.columns_except(currencies, assets)
+
+        filename = '_'.join(assets.columns).replace('/','')
+        np.log(assets.pct_change())[noncash].replace([np.inf,-np.inf], np.nan).hist(bins=30)
+        plt.savefig(f'log_normal_{filename}.png')
+        
+        for col in assets.columns:
+            sm.qqplot(np.log(assets[col].pct_change()).replace([np.inf,-np.inf], np.nan).dropna(), line='s')
+            plt.title(f'{col}')
+            filename = col.replace('/','')
+            plt.savefig(f'qqplot_{filename}.png')
     
     def plot_returns(self, assets, dates, cumul=True):
         '''
