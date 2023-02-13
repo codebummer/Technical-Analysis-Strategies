@@ -117,12 +117,12 @@ def make_returns_matrix(periods, values_matrix, returns_periods='annualcum'):
     elif returns_periods == 'annual':    
         for start, end in tqdm(periods):
             cumprods = pd.concat([cumprods, values_matrix.loc[start:end].pct_change().add(1).cumprod()])
-            returns = pd.concat([returns, cumprods])
+            returns = pd.concat([returns, cumprods.loc[start:end]])
     elif returns_periods == 'daily':
         for start, end in tqdm(periods):
             cumprods = pd.concat([cumprods, values_matrix.loc[start:end].pct_change().add(1).cumprod()])
             exp = pd.Series(cumprods.index.map(lambda x:1/x.timetuple().tm_yday), index=cumprods.index, name='1/Days')
-            returns = pd.concat([returns, cumprods.pow(exp, axis='index')])
+            returns = pd.concat([returns, cumprods.loc[start:end].pow(exp, axis='index')])
 
     return cumprods, returns
 
@@ -143,7 +143,7 @@ periods = find_periods(assets)
 holdings_matrix = make_holdings_matrix(weights, holdings, periods, assets)
 
 values_matrix = holdings_matrix*assets
-cumprods_matrix, returns_matrix = make_returns_matrix(periods, values_matrix)
+cumprods_matrix, returns_matrix = make_returns_matrix(periods, values_matrix, 'annual')
 asset_returns, total_returns = returns_matrix_to_returns(periods, returns_matrix)
 
 sns.lineplot(total_returns.loc[datetime(1980,1,2):])
@@ -156,3 +156,6 @@ sns.barplot(cumprods_matrix.loc[datetime(1980,1,2):])
 plt.savefig('barplot.png')
 sns.heatmap(assets.corr(), annot=True)
 plt.savefig('corr.png')
+
+np.log(assets.loc[datetime(1980,1,2):].pct_change()).iloc[:,:-1].replace([np.inf,-np.inf], np.nan).hist(bins=30)
+plt.savefig('log_normal_test.png')
