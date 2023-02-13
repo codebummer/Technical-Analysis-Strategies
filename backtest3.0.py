@@ -113,7 +113,7 @@ def make_returns_matrix(periods, values_matrix, returns_periods='annualcum'):
 
         cumprods = values_matrix.pct_change().add(1).cumprod()
         for start, end in tqdm(periods):            
-            returns = pd.concat([returns, cumprods.loc[start:end].multiply(1/years[end.year], axis='index')]) 
+            returns = pd.concat([returns, cumprods.loc[start:end].pow(1/years[end.year], axis='index')]) 
     elif returns_periods == 'annual':    
         for start, end in tqdm(periods):
             cumprods = pd.concat([cumprods, values_matrix.loc[start:end].pct_change().add(1).cumprod()])
@@ -122,7 +122,7 @@ def make_returns_matrix(periods, values_matrix, returns_periods='annualcum'):
         for start, end in tqdm(periods):
             cumprods = pd.concat([cumprods, values_matrix.loc[start:end].pct_change().add(1).cumprod()])
             exp = pd.Series(cumprods.index.map(lambda x:1/x.timetuple().tm_yday), index=cumprods.index, name='1/Days')
-            returns = pd.concat([returns, cumprods.multiply(exp, axis='index')])
+            returns = pd.concat([returns, cumprods.pow(exp, axis='index')])
 
     return cumprods, returns
 
@@ -138,8 +138,6 @@ def returns_matrix_to_returns(periods, returns_matrix):
     for start, end in tqdm(periods):
         returns = pd.concat([returns, returns_matrix.loc[end]], axis='columns')
     return returns.T.sum(), returns.T.sum(axis='columns')
-
-
 
 periods = find_periods(assets)
 holdings_matrix = make_holdings_matrix(weights, holdings, periods, assets)
