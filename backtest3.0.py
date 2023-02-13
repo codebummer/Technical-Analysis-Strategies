@@ -96,11 +96,63 @@ def make_holdings_matrix(weights, holdings, periods, assets):
     
     return holdings_matrix
 
+def make_returns_matrix(periods, values_matrix, returns_periods='annualcum'):
+    '''
+    periods: Benchmark().find_periods generated start/end datetime pairs that indicate rebalancing periods
+    values_matrix: price matrix * holdings matrix (holdings matrix includes weights, so don't factor in weights again)
+    returns_periods: periods by which returns are calculated
+        "annualcum" generates entire period annual returns cumulated
+        "annual" generates annual returns just yearly, not cumulated
+        "daily" generates daily returns    
+    
+    returns both cumprods matrix and returns matrix 
+    if you want just returns, not returns matrix, use Benchmark().returns_matrix_to_returns()
+    '''
+    cumprods = pd.DataFrame()
+    returns = pd.DataFrame()
+
+    if returns_periods == 'annualcum':
+        years = {}
+        for year, num in zip(set(values_matrix.index.year), range(1,len(values_matrix.index.year)+1)):
+            years[year] = num
+
+        cumprods = values_matrix.pct_change().add(1).cumprod()
+        for start, end in tqdm(periods):            
+            returns = pd.concat([returns, cumprods.multiply(1/years[end.year], axis='index')]) 
+    elif returns_periods == 'annual':    
+        for start, end in tqdm(periods):
+            cumprods = pd.concat([cumprods, values_matrix.loc[start:end].pct_change().add(1).cumprod()])
+            returns = pd.concat([returns, cumprods])
+    elif returns_periods == 'daily':
+        for start, end in tqdm(periods):
+            cumprods = pd.concat([cumprods, values_matrix.loc[start:end].pct_change().add(1).cumprod()])
+            exp = pd.Series(cumprods.index.map(lambda x:1/x.timetuple().tm_yday), index=cumprods.index, name='1/Days')
+            returns = pd.concat([returns, cumprods.multiply(exp, axis='index')])
+
+    return cumprods, returns
+
+
+def returns_matrix_to_returns(periods, returns_matrix):
+    '''
+    periods: Benchmark().find_periods generated start/end datetime pairs that indicate rebalancing periods
+    returns_matrix: Benchmark().make_returns_matrix() generated dataframe
+    
+    returns both each asset's respective returns and all assets' returns
+    '''
+    returns = pd.DataFrame()
+    for start, end in tqdm(periods):
+        returns = pd.concat([returns, returns_matrix.loc[end]])
+    return returns.sum(), returns.sum(axis='columns')
+
+
+
 periods = find_periods(assets)
 holdings_matrix = make_holdings_matrix(weights, holdings, periods, assets)
 
+values_matrix = holdings_matrix*assets
+cumprods_matirx, returns_matrix = make_returns_matrix(periods, values_matrix)
+asset_returns, total_returns = returns_matrix_to_returns(periods, returns_matrix)
 
-all = holdings_matrix*assets
 allcum = all.pct_change().add(1).cumprod()
 returns = all.sum(axis='columns')
 returnscum = returns.pct_change().add(1).cumprod()
