@@ -5,6 +5,14 @@ from datetime import datetime
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import seaborn as sns
+import math
+import scipy.stats as scs
+import statsmodels.api as sm
+from pylab import mpl, plt
+
+plt.style.use('seaborn')
+mpl.rcParams['font.family'] = 'serif'
+
 
 '''
 For backtesting, make the price matrix and the holdings matrix.
@@ -139,12 +147,49 @@ def returns_matrix_to_returns(periods, returns_matrix):
         returns = pd.concat([returns, returns_matrix.loc[end]], axis='columns')
     return returns.T.sum(), returns.T.sum(axis='columns')
 
+def normality_tests(assets):
+    ''' Tests for normality distribution of given data set.
+    Parameters
+    ==========
+    assets: dataframe
+    object to generate statistics on
+    '''
+    for asset in assets:
+        '''asset should be input in the following fuctions as a ndarray'''
+        print('\n', asset)
+        print('Skew of data set %14.3f' % scs.skew(assets[asset].values))
+        print('Skew test p-value %14.3f' % scs.skewtest(assets[asset].values)[1])
+        print('Kurt of data set %14.3f' % scs.kurtosis(assets[asset].values))
+        print('Kurt test p-value %14.3f' % scs.kurtosistest(assets[asset].values)[1])
+        print('Norm test p-value %14.3f' % scs.normaltest(assets[asset].values)[1])
+
+def graph_normality(assets, currencies):
+    '''
+    assets: dataframe for assets' daily prices
+    currencies: cash or currency assets' tickers in a list
+    graphically tests if a dataframe is normally distributed (Are returns of assets log normal?)
+    '''
+    cash, noncash = benchmark.columns_except(currencies, assets)
+
+    filename = '_'.join(assets.columns).replace('/','')
+    np.log(assets.pct_change())[noncash].replace([np.inf,-np.inf], np.nan).hist(bins=30)
+    plt.savefig(f'log_normal_{filename}.png')
+    
+    for col in assets.columns:
+        sm.qqplot(np.log(assets[col].pct_change()).replace([np.inf,-np.inf], np.nan).dropna(), line='s')
+        plt.title(f'{col}')
+        filename = col.replace('/','')
+        plt.savefig(f'qqplot_{filename}.png')
+
 periods = find_periods(assets)
 holdings_matrix = make_holdings_matrix(weights, holdings, periods, assets)
 
 values_matrix = holdings_matrix*assets
 cumprods_matrix, returns_matrix = make_returns_matrix(periods, values_matrix, 'annual')
 asset_returns, total_returns = returns_matrix_to_returns(periods, returns_matrix)
+
+normality_tests(assets)
+graph_normality(assets, [cash])
 
 sns.lineplot(total_returns.loc[datetime(1980,1,2):])
 plt.savefig('total_returns.png')
@@ -156,6 +201,3 @@ sns.barplot(cumprods_matrix.loc[datetime(1980,1,2):])
 plt.savefig('barplot.png')
 sns.heatmap(assets.corr(), annot=True)
 plt.savefig('corr.png')
-
-np.log(assets.loc[datetime(1980,1,2):].pct_change()).iloc[:,:-1].replace([np.inf,-np.inf], np.nan).hist(bins=30)
-plt.savefig('log_normal_test.png')
