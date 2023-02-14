@@ -25,6 +25,7 @@ backtest the asset values
 
 benchmark = Benchmark()
 assets = benchmark.get()
+eikon = benchmark.load_eikon()
 # benchmark.plot_returns(assets,[datetime(2018,1,2),datetime(2021,12,31)])
 bonds, nonbonds = benchmark.columns_except(['US10Y'], assets)
 cash, noncash = benchmark.columns_except(['USD'], assets)
@@ -180,6 +181,36 @@ def graph_normality(assets, currencies):
         plt.title(f'{col}')
         filename = col.replace('/','')
         plt.savefig(f'qqplot_{filename}.png')
+        
+def efficient_frontier(assets):
+    days = len(assets)
+    print('Finding annual periods of the investment')
+    periods = benchmark.find_periods(assets)
+    returns = []
+    volatility = []
+    print('Monte Carlo Simulation in progress')
+    for _ in tqdm(range(100)):            
+        weights = np.random.random(len(assets.columns))
+        weights /= np.sum(weights)
+        
+        weighted_returns = pd.DataFrame()
+        for start, end in periods:
+            weighted_returns = pd.concat([weighted_returns, (assets.pct_change()*weights).groupby(assets.index.year).get_group(end.year).sum()], axis='columns')
+            
+        variance = math.sqrt(np.dot(weights.T, np.dot(assets.cov()*days,weights)))
+        returns.append(weighted_returns.sum(axis='columns').mean())
+        volatility.append(variance)
+    print(returns, volatility)
+    returns = np.array(returns)
+    volatility = np.array(volatility)
+    filename = '_'.join(assets.columns)
+    plt.figure(figsize=(10,6))
+    plt.scatter(volatility, returns, c=returns/volatility, marker='0', cmap='coolwarm')
+    plt.xlabel('Expected Volatility')
+    plt.ylabel('Expected Return')
+    plt.colorbar(label='Sharpe Ratio')
+    plt.savefig(f'efficient_frontier_{filename}.png')
+    return returns, volatility  
 
 periods = find_periods(assets)
 holdings_matrix = make_holdings_matrix(weights, holdings, periods, assets)
@@ -190,6 +221,11 @@ asset_returns, total_returns = returns_matrix_to_returns(periods, returns_matrix
 
 normality_tests(assets)
 graph_normality(assets, [cash])
+
+normality_tests(eikon)
+graph_normality(eikon, [])
+
+returns, volatility = efficient_frontier(eikon)
 
 sns.lineplot(total_returns.loc[datetime(1980,1,2):])
 plt.savefig('total_returns.png')
