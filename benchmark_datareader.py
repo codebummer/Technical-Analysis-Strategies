@@ -27,7 +27,7 @@ class Benchmark():
 
     def downloads(self):
         '''
-        download S&P500, US10Y, XAU/USD from stooq.com and
+        downloads S&P500, US10Y, XAU/USD from stooq.com and
         returns a diction whose keys are asset names and whose values are their daily price or yield data'''
         dic = {}
         XAUUSDurl = 'https://stooq.com/q/d/l/?s=xauusd&i=d'
@@ -35,6 +35,16 @@ class Benchmark():
         dic['US10Y'] = pdr.DataReader('10USY.B', 'stooq', self.start, datetime.today())
         dic['XAU/USD'] = pd.read_csv(XAUUSDurl, parse_dates=['Date'], index_col=0).sort_index(ascending=False)
         return dic
+
+    def load_eikon(self):
+        '''
+        downloads AAPL, MSFT, INTC, AMZN, GS.N, SPY, .SPX, .VIX, EUR=, XAU=, GDX, GLD from yhilpisch's github account
+        The data is used in the book, Python for Finance by Yves Hilpisch
+        '''
+        url = 'https://raw.githubusercontent.com/yhilpisch/py4fi/master/jupyter36/source/tr_eikon_eod_data.csv'      
+        data = pd.read_csv(url, index_col=0, parse_dates=['Date'])  
+        data.columns = ['AAPL', 'MSFT', 'INTC', 'AMZN', 'GS', 'SPY', 'SPX', 'VIX', 'EUR', 'XAU', 'GDX', 'GLD']
+        return data
 
     # make isoranged dataframes
     def make_isoranged(self, dic):
