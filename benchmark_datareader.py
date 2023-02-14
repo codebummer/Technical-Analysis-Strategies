@@ -179,6 +179,23 @@ class Benchmark():
         # return takeouts_index, takeouts, keepers_index, keepers
         return takeouts, keepers
 
+    def initial_holdings(self, invested, weights, assets, cash):
+        '''
+        invested: initial investing cash amount - int or float
+        weights: weights of investment for each asset - pandas.Series
+        assets: dataframe of assets' daily prices
+        cash: column name of the "cash" asset in the assets - 'str' not a list
+        returns a pandas.Series that includes inital numbers of holdings for each asset
+        '''
+        quotients = invested*weights//assets.iloc[0,:]
+        remainders = invested*weights/assets.iloc[0,:] - quotients
+        quotients[cash] += (remainders*assets.iloc[0,:]).sum()
+        quotients.name = 'Holdings'
+        if (quotients*assets.iloc[0,:]).sum() == invested:
+            return quotients
+        else:
+            print('The holdings amount does not match the invested amount')
+
     # make weights matrix
     def make_weight_matrix(self, period, holdings, assets):
         '''
@@ -307,6 +324,51 @@ class Benchmark():
             plt.title(f'{col}')
             filename = col.replace('/','')
             plt.savefig(f'qqplot_{filename}.png')
+
+    def get_volatility(self, weights, values_matrix):
+        '''
+        weights: weights of investment for each asset - pandas.Series
+        values_matrix: holdings_matrix * assets' price matrix - pandas.DataFrame
+        returns variance of assets' returns as volatility
+        '''
+        days = len(values_matrix)
+        return math.sqrt(np.dot(weights.T, np.dot(values_matrix.cov()*days,weights)))
+
+    def get_sharpe(self, returns, volatility):
+        '''
+        returns: total returns of assets, the results of Benchmark.returns_matrix_to_returns(Benchmark.make_returns_matrix())
+        returns Sharpe Ratio = returns/variance = returns/volatility
+        '''
+        return returns/volatility
+
+    def efficient_frontier(self, assets):
+        days = len(assets)
+        print('Finding annual periods of the investment')
+        periods = self.find_periods(assets)
+        returns = []
+        volatility = []
+        print('Monte Carlo Simulation in progress')
+        for _ in tqdm(range(2500)):            
+            weights = np.random.random(len(assets.columns))
+            weights /= np.sum(weights)
+            
+            weighted_returns = pd.DataFrame()
+            for start, end in periods:
+                weighted_returns = pd.concat([weighted_returns, (assets.pct_change()*weights).groupby(assets.index.year).get_group(end.year).sum()], axis='columns')
+                
+            variance = math.sqrt(np.dot(weights.T, np.dot(assets.cov()*days,weights)))
+            returns.append(weighted_returns.sum(axis='columns').mean())
+            volatility.append(variance)
+        returns = np.array(returns)
+        volatility = np.array(volatility)
+        filename = '_'.join(assets.columns)
+        plt.figure(figsize=(10,6))
+        plt.scatter(volatility, returns, c=returns/volatility, marker='o', cmap='coolwarm')
+        plt.xlabel('Expected Volatility')
+        plt.ylabel('Expected Return')
+        plt.colorbar(label='Sharpe Ratio')
+        plt.savefig(f'efficient_frontier_{filename}.png')
+        return returns, volatility  
     
     def plot_returns(self, assets, dates, cumul=True):
         '''
