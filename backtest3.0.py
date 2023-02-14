@@ -33,12 +33,68 @@ bonds = bonds[0]
 cash = cash[0]
 assets[bonds] = benchmark.yields_to_prices(10, assets[bonds], False)
 
+french = pd.read_csv('https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/Developed_25_Portfolios_ME_BE-ME_daily_CSV.zip', index_col=0, header=11, parse_dates=True)
+french.index = french.index.map(lambda x:x.strip())
+french.index = np.where(french.index.values=='Average Equal Weighted Returns -- Daily', 'delete', french.index.values)
+french.index = np.where(french.index.values=='', 'delete', french.index.values)
+french = french.drop(['delete'], axis='index')
+
+def generate_index(index):
+    index = index.map(lambda x:x.strip())
+    dates = []
+    add = []
+    for idx in tqdm(range(len(index)-1)):
+        if 'Average' in index[idx]:
+            add.append('delete')
+            if 'Average' in index[idx+1]:
+                
+            
+        # print(french.index[idx], french.index[idx+1]) # to check if something goes wrong
+            prior = datetime.strptime(french.index[idx],'%Y%m%d')
+            current = datetime.strptime(french.index[idx+1], '%Y%m%d')
+            if add[-1] > current:
+                dates.append(add)
+                add = []
+                add.append(current)
+            elif idx == len(french.index)-1:
+                add.append(prior)
+                add.append(current)
+                dates.append(add)  
+            else:
+                add.append(prior)            
+
+       
+    return dates
+
+dates = generate_index(french.index)
+
+french.index = np.array(dates).flatten()
+
+
+
 # initial amount of investment
-invested = 30_000
+invested = 1_000
 # weights for assets in ratio
 weights = pd.Series({'S&P500':0.3, 'US10Y':0.5, 'XAU/USD':0.15, 'USD':0.05}, name='Weights')
 
-holdings = pd.Series({'S&P500':30, 'US10Y':50, 'XAU/USD':15, 'USD':5}, name='Holdings')
+def initial_holdings(invested, weights, assets, cash):
+    '''
+    invested: initial investing cash amount - int or float
+    weights: weights of investment for each asset - pandas.Series
+    assets: dataframe of assets' daily prices
+    cash: column name of the "cash" asset in the assets - 'str' not a list
+    returns a pandas.Series that includes inital numbers of holdings for each asset
+    '''
+    quotients = invested*weights//assets.iloc[0,:]
+    remainders = invested*weights/assets.iloc[0,:] - quotients
+    quotients[cash] += (remainders*assets.iloc[0,:]).sum()
+    quotients.name = 'Holdings'
+    if (quotients*assets.iloc[0,:]).sum() == invested:
+        return quotients
+    else:
+        print('The holdings amount does not match the invested amount')
+    
+holdings = initial_holdings(invested, weights, assets, 'USD')
 
 def find_periods(df):
     '''
@@ -189,7 +245,7 @@ def efficient_frontier(assets):
     returns = []
     volatility = []
     print('Monte Carlo Simulation in progress')
-    for _ in tqdm(range(100)):            
+    for _ in tqdm(range(2500)):            
         weights = np.random.random(len(assets.columns))
         weights /= np.sum(weights)
         
@@ -198,19 +254,35 @@ def efficient_frontier(assets):
             weighted_returns = pd.concat([weighted_returns, (assets.pct_change()*weights).groupby(assets.index.year).get_group(end.year).sum()], axis='columns')
             
         variance = math.sqrt(np.dot(weights.T, np.dot(assets.cov()*days,weights)))
-        returns.append(weighted_returns.sum(axis='columns').mean())
+        returns.append(weighted_returns.sum().mean())
         volatility.append(variance)
-    print(returns, volatility)
     returns = np.array(returns)
     volatility = np.array(volatility)
     filename = '_'.join(assets.columns)
     plt.figure(figsize=(10,6))
-    plt.scatter(volatility, returns, c=returns/volatility, marker='0', cmap='coolwarm')
+    plt.scatter(volatility, returns, c=returns/volatility, marker='o', cmap='coolwarm')
     plt.xlabel('Expected Volatility')
     plt.ylabel('Expected Return')
     plt.colorbar(label='Sharpe Ratio')
     plt.savefig(f'efficient_frontier_{filename}.png')
     return returns, volatility  
+
+def get_volatility(weights, values_matrix):
+    '''
+    weights: weights of investment for each asset - pandas.Series
+    values_matrix: holdings_matrix * assets' price matrix - pandas.DataFrame
+    returns variance of assets' returns as volatility
+    '''
+    days = len(values_matrix)
+    return math.sqrt(np.dot(weights.T, np.dot(values_matrix.cov()*days,weights)))
+
+def get_sharpe(returns, volatility):
+    '''
+    returns: total returns of assets, the results of Benchmark.returns_matrix_to_returns(Benchmark.make_returns_matrix())
+    returns Sharpe Ratio = returns/variance = returns/volatility
+    '''
+    return returns/volatility
+
 
 periods = find_periods(assets)
 holdings_matrix = make_holdings_matrix(weights, holdings, periods, assets)
@@ -226,7 +298,29 @@ normality_tests(eikon)
 graph_normality(eikon, [])
 
 returns, volatility = efficient_frontier(eikon)
+sharpe = get_sharpe(total_returns.sum(), get_volatility(weights, values_matrix))
 
+
+
+days = len(assets)
+print('Finding annual periods of the investment')
+periods = benchmark.find_periods(assets)
+returns = []
+volatility = []
+print('Monte Carlo Simulation in progress')
+for _ in tqdm(range(2500)):            
+    weights = np.random.random(len(assets.columns))
+    weights /= np.sum(weights)
+    
+    weighted_returns = pd.DataFrame()
+    for start, end in periods:
+        weighted_returns = pd.concat([weighted_returns, (assets.pct_change()*weights).groupby(assets.index.year).get_group(end.year).sum()], axis='columns')
+        
+    variance = math.sqrt(np.dot(weights.T, np.dot(assets.cov()*days,weights)))
+    returns.append(weighted_returns.sum().mean())
+    volatility.append(variance)
+
+    
 sns.lineplot(total_returns.loc[datetime(1980,1,2):])
 plt.savefig('total_returns.png')
 sns.lineplot(cumprods_matrix.loc[datetime(1980,1,2):])
