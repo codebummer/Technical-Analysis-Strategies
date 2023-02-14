@@ -45,6 +45,28 @@ class Benchmark():
         data = pd.read_csv(url, index_col=0, parse_dates=['Date'])  
         data.columns = ['AAPL', 'MSFT', 'INTC', 'AMZN', 'GS', 'SPY', 'SPX', 'VIX', 'EUR', 'XAU', 'GDX', 'GLD']
         return data
+    
+    def load_french(self):    
+        data = pd.read_csv('https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/Developed_25_Portfolios_ME_BE-ME_daily_CSV.zip', index_col=0, header=11, parse_dates=True)
+        '''returns two dataframes'''
+        def _generate_index(index):
+            index = index.map(lambda x:x.strip())
+            dates = []
+            breaks = []
+            for idx in tqdm(range(len(index))):
+                if index[idx] == '':
+                    breaks.append(idx)
+                    dates.append('')
+                elif 'Average' in index[idx]:
+                    dates.append('Average')
+                else:               
+                    dates.append(datetime.strptime(index[idx],'%Y%m%d'))
+            return np.array(dates), breaks
+
+        data.index, breaks = _generate_index(data.index)
+
+        return data.iloc[:breaks[0]-1], data.iloc[breaks[0]+1:]
+        
 
     # make isoranged dataframes
     def make_isoranged(self, dic):
