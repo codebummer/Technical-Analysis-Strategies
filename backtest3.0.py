@@ -26,51 +26,13 @@ backtest the asset values
 benchmark = Benchmark()
 assets = benchmark.get()
 eikon = benchmark.load_eikon()
+french = benchmark.load_french()
 # benchmark.plot_returns(assets,[datetime(2018,1,2),datetime(2021,12,31)])
 bonds, nonbonds = benchmark.columns_except(['US10Y'], assets)
 cash, noncash = benchmark.columns_except(['USD'], assets)
 bonds = bonds[0]
 cash = cash[0]
 assets[bonds] = benchmark.yields_to_prices(10, assets[bonds], False)
-
-french = pd.read_csv('https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/Developed_25_Portfolios_ME_BE-ME_daily_CSV.zip', index_col=0, header=11, parse_dates=True)
-french.index = french.index.map(lambda x:x.strip())
-french.index = np.where(french.index.values=='Average Equal Weighted Returns -- Daily', 'delete', french.index.values)
-french.index = np.where(french.index.values=='', 'delete', french.index.values)
-french = french.drop(['delete'], axis='index')
-
-def generate_index(index):
-    index = index.map(lambda x:x.strip())
-    dates = []
-    add = []
-    for idx in tqdm(range(len(index)-1)):
-        if 'Average' in index[idx]:
-            add.append('delete')
-            if 'Average' in index[idx+1]:
-                
-            
-        # print(french.index[idx], french.index[idx+1]) # to check if something goes wrong
-            prior = datetime.strptime(french.index[idx],'%Y%m%d')
-            current = datetime.strptime(french.index[idx+1], '%Y%m%d')
-            if add[-1] > current:
-                dates.append(add)
-                add = []
-                add.append(current)
-            elif idx == len(french.index)-1:
-                add.append(prior)
-                add.append(current)
-                dates.append(add)  
-            else:
-                add.append(prior)            
-
-       
-    return dates
-
-dates = generate_index(french.index)
-
-french.index = np.array(dates).flatten()
-
-
 
 # initial amount of investment
 invested = 1_000
@@ -190,7 +152,6 @@ def make_returns_matrix(periods, values_matrix, returns_periods='annualcum'):
             returns = pd.concat([returns, cumprods.loc[start:end].pow(exp, axis='index')])
 
     return cumprods, returns
-
 
 def returns_matrix_to_returns(periods, returns_matrix):
     '''
