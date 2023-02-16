@@ -5,7 +5,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
-import math
+import math, re
 import scipy.stats as scs
 import statsmodels.api as sm
 from pylab import mpl, plt
