@@ -46,7 +46,58 @@ class Benchmark():
         data.columns = ['AAPL', 'MSFT', 'INTC', 'AMZN', 'GS', 'SPY', 'SPX', 'VIX', 'EUR', 'XAU', 'GDX', 'GLD']
         return data
     
-    def load_french(self):    
+    def load_french(self, period='monthly'):   
+        '''
+        period: "daily" or "monthly" for daily or monthly prices dataframe
+        returns two dataframes. However, the second "daily" dataframe is not cleaned up perfectly,
+        to clean up, either remove the first two rows from it manually,
+        or use Benchmark().load_french_daily() method
+        ''' 
+        if period == 'daily':        
+            url_daily = 'https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/Developed_25_Portfolios_ME_BE-ME_daily_CSV.zip'
+            data = pd.read_csv(url_daily, index_col=0, header=11, parse_dates=True)            
+        elif period == 'monthly':
+            url_monthly = 'https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/Developed_25_Portfolios_ME_BE-ME_CSV.zip'
+            data = pd.read_csv(url_monthly, index_col=0, header=12, parse_dates=True)
+            
+        def _generate_index(index):
+            index = index.map(lambda x:x.strip())
+            dates = []
+            breaks = [0]
+            for idx in tqdm(range(len(index))):
+                string = re.search('[a-zA-Z+]', index[idx])
+                if index[idx] == '':
+                    dates.append('')
+                elif string:
+                    dates.append(index[idx])
+                    breaks.append(idx)
+                else:
+                    if len(index[idx]) == 8:
+                        dates.append(datetime.strptime(index[idx],'%Y%m%d'))
+                    if len(index[idx]) == 6:               
+                        dates.append(datetime.strptime(index[idx],'%Y%m'))
+                    elif len(index[idx]) == 4:
+                        dates.append(datetime.strptime(index[idx],'%Y'))
+            breaks.append(len(data))
+            return np.array(dates), breaks
+
+        data.index, breaks = _generate_index(data.index)
+
+        results = {}
+        for cut in tqdm(range(len(breaks)-1)):
+            if cut == 0:
+                results['Average Value Weighted Returns -- Monthly'] = data.iloc[:breaks[cut+1]]
+            else:    
+                results[data.index[breaks[cut]]] = data.iloc[breaks[cut]:breaks[cut+1]]
+                
+        return results
+
+    def load_french_daily(self):    
+        '''
+        returns two daily dataframes.
+        This method cannot be used generally. This is customized only for crawling thid dataset from this link.
+        Use Benchmark().load_french() for more generalized crawling for other data from the same website.
+        '''
         data = pd.read_csv('https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/Developed_25_Portfolios_ME_BE-ME_daily_CSV.zip', index_col=0, header=11, parse_dates=True)
         '''returns two dataframes'''
         def _generate_index(index):
@@ -66,7 +117,6 @@ class Benchmark():
         data.index, breaks = _generate_index(data.index)
 
         return data.iloc[:breaks[0]-1], data.iloc[breaks[0]+1:]
-        
 
     # make isoranged dataframes
     def make_isoranged(self, dic):
