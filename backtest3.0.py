@@ -9,6 +9,7 @@ import math
 import scipy.stats as scs
 import statsmodels.api as sm
 from pylab import mpl, plt
+import re
 
 plt.style.use('seaborn')
 mpl.rcParams['font.family'] = 'serif'
@@ -38,6 +39,55 @@ assets[bonds] = benchmark.yields_to_prices(10, assets[bonds], False)
 invested = 1_000
 # weights for assets in ratio
 weights = pd.Series({'S&P500':0.3, 'US10Y':0.5, 'XAU/USD':0.15, 'USD':0.05}, name='Weights')
+
+lasts = [end for start, end in tqdm(periods) for _ in range(len(assets.groupby(assets.index.year).get_group(end.year)))]
+assets['Signals'] = np.where(assets.index==lasts,1,0)
+positions = assets['Signals'].cumsum().replace(to_replace=0, method='ffill')
+positions.groupby(positions.index.year).get_group(1874)
+
+def load_french(period='monthly'):   
+    '''
+    period: "daily" or "monthly" for daily or monthly prices dataframe
+    returns two dataframes
+    ''' 
+    if period == 'daily':        
+        url_daily = 'https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/Developed_25_Portfolios_ME_BE-ME_daily_CSV.zip'
+        data = pd.read_csv(url_daily, index_col=0, header=11, parse_dates=True)            
+    elif period == 'monthly':
+        url_monthly = 'https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/Developed_25_Portfolios_ME_BE-ME_CSV.zip'
+        data = pd.read_csv(url_monthly, index_col=0, header=12, parse_dates=True)
+        
+    def _generate_index(index):
+        index = index.map(lambda x:x.strip())
+        dates = []
+        breaks = [0]
+        for idx in tqdm(range(len(index))):
+            string = re.search('[a-zA-Z+]', index[idx])
+            if index[idx] == '':
+                dates.append('')
+            elif string:
+                dates.append(index[idx])
+                breaks.append(idx)
+            else:
+                if len(index[idx]) == 8:
+                    dates.append(datetime.strptime(index[idx],'%Y%m%d'))
+                if len(index[idx]) == 6:               
+                    dates.append(datetime.strptime(index[idx],'%Y%m'))
+                elif len(index[idx]) == 4:
+                    dates.append(datetime.strptime(index[idx],'%Y'))
+        breaks.append(len(data))
+        return np.array(dates), breaks
+
+    data.index, breaks = _generate_index(data.index)
+
+    results = {}
+    for cut in tqdm(range(len(breaks)-1)):
+        if cut == 0:
+            results['Average Value Weighted Returns -- Monthly'] = data.iloc[:breaks[cut+1]]
+        else:    
+            results[data.index[breaks[cut]]] = data.iloc[breaks[cut]:breaks[cut+1]]
+            
+    return results
 
 def initial_holdings(invested, weights, assets, cash):
     '''
