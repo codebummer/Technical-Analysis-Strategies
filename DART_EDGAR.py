@@ -39,7 +39,7 @@ def get_company_list():
     # corps = corps.drop(remove)
 
 # Read the prior database downloaded 
-with sqlite3.connect('./MarketDB/KoreaFins/fins_2022_Q3.db') as db:
+with sqlite3.connect('./MarketDB/KoreaFins/fins_2022_3분기보고서.db') as db:
     query = '''SELECT * FROM sqlite_master WHERE type='table';'''
     tables = db.cursor().execute(query).fetchall()
 
@@ -53,6 +53,7 @@ years = [2021, 2020, 2019, 2018]
 
 # reports = {'1분기보고서':'11013', '반기보고서':'11012', '3분기보고서':'11014', '사업보고서':'11011'}
 reports = {'사업보고서':'11011', '3분기보고서':'11014', '반기보고서':'11012', '1분기보고서':'11013'}
+filenames = {'사업보고서':'Q4', '3분기보고서':'Q3', '반기보고서':'Q2', '1분기보고서':'Q1'}
 
 for year in tqdm(years):
     for title, report in tqdm(reports.items()):
@@ -68,7 +69,7 @@ for year in tqdm(years):
                 time.sleep(0.5)
                 continue
             if len(add) != 0:
-                with sqlite3.connect(f'./MarketDB/fins_{year}_{title}.db') as db:
+                with sqlite3.connect(f'./MarketDB/{year}_{filenames[title]}.db') as db:
                     add.to_sql(corp+'_'+title, db, if_exists='replace', index=False)
                 # dart.finstate_all(code, 2021, report, 'OFS')
 
