@@ -58,10 +58,13 @@ def get_fins_corp(corp):
     '''
     os.chdir(r'D:\myprojects\MarketDB\KoreaFins')
     path = r'D:\myprojects\MarketDB\KoreaFins'
+    files = os.listdir(path)
+    files.sort(reverse=True)
     years = [str(i) for i in range(2022, 2017, -1)]
     quarters = ['Q4', 'Q3', 'Q2', 'Q1']
     changeqtr = {'Q1':'1분기보고서', 'Q2':'반기보고서', 'Q3':'3분기보고서', 'Q4':'사업보고서'}
-   
+
+       
     fins = {}
     for year in years:
         for quarter in quarters:
@@ -87,6 +90,8 @@ def get_fins_all():
     '''
     os.chdir(r'D:\myprojects\MarketDB\KoreaFins')
     path = r'D:\myprojects\MarketDB\KoreaFins'
+    files = os.listdir(path)
+    files.sort(reverse=True)
     years = [str(i) for i in range(2022, 2017, -1)]
     quarters = ['Q4', 'Q3', 'Q2', 'Q1']
     changeqtr = {'Q1':'1분기보고서', 'Q2':'반기보고서', 'Q3':'3분기보고서', 'Q4':'사업보고서'}
