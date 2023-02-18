@@ -99,7 +99,7 @@ def get_fins_all():
     corps = get_corp_list()
 
     fins = {}
-    for corp in corps:
+    for corp in tqdm(corps):
         add = {}
         for year in years:
             for quarter in quarters:
