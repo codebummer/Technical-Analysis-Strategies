@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import sqlite3
-import os, sys, re
+import os, sys, re, json
 from datetime import datetime
 from tqdm import tqdm
 
@@ -56,7 +56,6 @@ def get_fins_corp(corp):
     corp: company name
     returns a single company's financial records all vailable in a dictionary
     '''
-    os.chdir(r'D:\myprojects\MarketDB\KoreaFins')
     path = r'D:\myprojects\MarketDB\KoreaFins'
     files = os.listdir(path)
     files.sort(reverse=True)
@@ -71,44 +70,52 @@ def get_fins_corp(corp):
             fins[year+'_'+quarter] = {}
             
     for file in tqdm(files):
-        with sqlite3.connect(file) as db:
+        with sqlite3.connect(path+'\\'+file) as db:
+            query = '''SELECT * FROM sqlite_master WHERE type='table';'''
+            tables = db.cursor().execute(query).fetchall()
+            tables = [table[1] for table in tables]
             year, quarter = file.strip('.db').split('_')
             table = corp+'_'+changeqtr[quarter]
-            df = pd.read_sql(f'SELECT * FROM {table}', db)
-            for idx in range(len(df)):
-                value = df.loc[idx,'thstrm_amount'].replace('.','')
-                nonnumeric = re.search('[^-*0-9+.*]',value)
-                if nonnumeric or value == '':
-                    fins[year+'_'+quarter][df.loc[idx,'account_nm']] = 0.0
-                else:
-                    fins[year+'_'+quarter][df.loc[idx,'account_nm']] = float(df.loc[idx,'thstrm_amount'])
+            if table in tables:
+                df = pd.read_sql(f'SELECT * FROM {table}', db)
+                for idx in range(len(df)):
+                    value = df.loc[idx,'thstrm_amount'].replace('.','')
+                    nonnumeric = re.search('[^-*0-9+.*]',value)
+                    if nonnumeric or value == '':
+                        fins[year+'_'+quarter][df.loc[idx,'account_nm']] = 0.0
+                    else:
+                        fins[year+'_'+quarter][df.loc[idx,'account_nm']] = float(df.loc[idx,'thstrm_amount'])
+            else:
+                continue
     return fins
         
+
 def get_fins_all():
     '''    
     returns all companies' financial records all vailable in a dictionary
     '''
-    os.chdir(r'D:\myprojects\MarketDB\KoreaFins')
-    path = r'D:\myprojects\MarketDB\KoreaFins'
-    files = os.listdir(path)
-    files.sort(reverse=True)
-    years = [str(i) for i in range(2022, 2017, -1)]
-    quarters = ['Q4', 'Q3', 'Q2', 'Q1']
-    changeqtr = {'Q1':'1분기보고서', 'Q2':'반기보고서', 'Q3':'3분기보고서', 'Q4':'사업보고서'}
     
     corps = get_corp_list()
 
-    fins = {}
-    for corp in tqdm(corps):
+    def _get_single_corp(corp):
         add = {}
+        path = r'D:\myprojects\MarketDB\KoreaFins'
+        files = os.listdir(path)
+        files.sort(reverse=True)
+        years = [str(i) for i in range(2022, 2017, -1)]
+        quarters = ['Q4', 'Q3', 'Q2', 'Q1']
+        changeqtr = {'Q1':'1분기보고서', 'Q2':'반기보고서', 'Q3':'3분기보고서', 'Q4':'사업보고서'}
+
+        
         for year in years:
             for quarter in quarters:
                 add[year+'_'+quarter] = {}
                 
         for file in tqdm(files):
-            with sqlite3.connect(file) as db:
+            with sqlite3.connect(path+'\\'+file) as db:
                 query = '''SELECT * FROM sqlite_master WHERE type='table';'''
                 tables = db.cursor().execute(query).fetchall()
+                tables = [table[1] for table in tables]
                 year, quarter = file.strip('.db').split('_')
                 table = corp+'_'+changeqtr[quarter]
                 if table in tables:
@@ -119,10 +126,18 @@ def get_fins_all():
                         if nonnumeric or value == '':
                             add[year+'_'+quarter][df.loc[idx,'account_nm']] = 0.0
                         else:
-                            add[year+'_'+quarter][df.loc[idx,'account_nm']] = float(df.loc[idx,'thstrm_amount'])                    
+                            add[year+'_'+quarter][df.loc[idx,'account_nm']] = float(df.loc[idx,'thstrm_amount'])
                 else:
                     continue
-        fins[corp] = add
+        return add
+
+    fins = {}
+    for corp in tqdm(corps):
+        fins[corp] = _get_single_corp(corp)
+        
+    with open(r'D:\myprojects\MarketDB\finstats.json', 'w', encoding='utf-8') as file:
+        json.dump(fins, file, ensure_ascii=False)
+        
     return fins
 
 fins = get_fins_all()
