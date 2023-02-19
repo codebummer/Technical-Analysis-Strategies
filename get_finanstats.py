@@ -68,9 +68,6 @@ def get_fins_corp(corp):
 
        
     fins = {'year':[], 'quarter':[]}
-    # for year in years:
-    #     for quarter in quarters:
-    #         fins[year+'_'+quarter] = {}
             
     for file in tqdm(files):
         with sqlite3.connect(path+'\\'+file) as db:
@@ -157,6 +154,8 @@ def get_fins_from_scratch():
         tables = db.cursor().execute(query).fetchall()
         corps = [table[1].split('_')[0] for table in tables]
         corps.sort()
+        corps = corps[:700]
+
 
     dart = OpenDartReader(DART_KEY)
     years = [year for year in range(2022, 2017, -1)]
@@ -194,6 +193,13 @@ def get_fins_from_scratch():
 
     with open('finstats.json', 'w', encoding='utf-8') as file:
         json.dump(fins, file, ensure_ascii=False)
-    print('saved financial statements in finanstats.json')                
+    print('saved financial statements in finanstats.json')   
+    
+    return fins             
 
 fins = get_fins_from_scratch()
+
+with open('finstats.json', 'r', encoding='utf-8') as file:
+    fins = json.load(file)
+ak = pd.DataFrame(fins['AK홀딩스'])
+ak.groupby('year').get_group(2022).groupby('quarter').get_group('Q3')['매출총이익']
