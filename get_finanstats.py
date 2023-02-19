@@ -77,7 +77,7 @@ def get_fins_corp(corp):
             year, quarter = file.strip('.db').split('_')
             table = corp+'_'+changeqtr[quarter]
             if table in tables:
-                df = pd.read_sql(f'SELECT * FROM {table}', db)
+                df = pd.read_sql(f'SELECT * FROM [{table}]', db)
                 for idx in range(len(df)):
                     value = df.loc[idx,'thstrm_amount'].replace('.','')
                     nonnumeric = re.search('[^-*0-9+.*]',value)
@@ -119,7 +119,7 @@ def get_fins_all():
                 year, quarter = file.strip('.db').split('_')
                 table = corp+'_'+changeqtr[quarter]
                 if table in tables:
-                    df = pd.read_sql(f'SELECT * FROM {table}', db)
+                    df = pd.read_sql(f'SELECT * FROM [{table}]', db)
                     for idx in range(len(df)):
                         value = df.loc[idx,'thstrm_amount'].replace('.','')
                         nonnumeric = re.search('[^-*0-9+.*]',value)
