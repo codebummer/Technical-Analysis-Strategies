@@ -67,28 +67,31 @@ def get_fins_corp(corp):
     changeqtr = {'Q1':'1분기보고서', 'Q2':'반기보고서', 'Q3':'3분기보고서', 'Q4':'사업보고서'}
 
        
-    fins = {'year':[], 'quarter':[]}
-            
+    fins = []            
     for file in tqdm(files):
         with sqlite3.connect(path+'\\'+file) as db:
+            add = {}
             query = '''SELECT * FROM sqlite_master WHERE type='table';'''
             tables = db.cursor().execute(query).fetchall()
             tables = [table[1] for table in tables]
             year, quarter = file.strip('.db').split('_')
             table = corp+'_'+changeqtr[quarter]
-            fins['year'].append(year)
-            fins['quarter'].append(quarter)            
+            add['year'] = year
+            add['quarter'] = quarter            
             if table in tables:
                 df = pd.read_sql(f'SELECT * FROM [{table}]', db)
                 for idx in range(len(df)):
                     value = df.loc[idx,'thstrm_amount'].replace('.','')
                     nonnumeric = re.search('[^-*0-9+.*]',value)
                     if nonnumeric or value == '':
-                        fins[df.loc[idx,'account_nm']] = 0.0                        
+                        add[df.loc[idx,'account_nm']] = 0.0                        
                     else: 
-                        fins[df.loc[idx,'account_nm']] = float(df.loc[idx,'thstrm_amount'])
+                        add[df.loc[idx,'account_nm']] = float(df.loc[idx,'thstrm_amount'])
             else:
                 continue
+            
+            fins.append(add)
+            
     return fins
         
 
@@ -108,16 +111,17 @@ def get_fins_all():
         quarters = ['Q4', 'Q3', 'Q2', 'Q1']
         changeqtr = {'Q1':'1분기보고서', 'Q2':'반기보고서', 'Q3':'3분기보고서', 'Q4':'사업보고서'}
 
-        add = {'year':[], 'quarter':[]}                
+        records = []                
         for file in tqdm(files):
             with sqlite3.connect(path+'\\'+file) as db:
+                add = {}
                 query = '''SELECT * FROM sqlite_master WHERE type='table';'''
                 tables = db.cursor().execute(query).fetchall()
                 tables = [table[1] for table in tables]
                 year, quarter = file.strip('.db').split('_')
                 table = corp+'_'+changeqtr[quarter]
-                add['year'].append(year)
-                add['quarter'].append(quarter)                
+                add['year'] = year
+                add['quarter'] = quarter
                 if table in tables:
                     df = pd.read_sql(f'SELECT * FROM [{table}]', db)
                     for idx in range(len(df)):
@@ -129,7 +133,10 @@ def get_fins_all():
                             add[df.loc[idx,'account_nm']] = float(df.loc[idx,'thstrm_amount'])
                 else:
                     continue
-        return add
+                
+                records.append(add)
+                
+        return records
 
     fins = {}
     for corp in tqdm(corps):
@@ -158,7 +165,7 @@ def get_fins_from_scratch():
     quarters = {'11013':'Q1', '11012':'Q2', '11014':'Q3', '11011':'Q4'}
 
     def _get_fins_corp(corp):
-        add = {'year':[], 'quarter':[]}
+        records = []
         for year in years:
             for code, quarter in quarters.items():            
                 try:
@@ -169,9 +176,10 @@ def get_fins_from_scratch():
                     time.sleep(0.5)
                     continue
                 if len(raw) != 0:
+                    add={}
                     raw = raw[['account_nm', 'thstrm_amount']]
-                    add['year'].append(year)
-                    add['quarter'].append(quarter)
+                    add['year'] = year
+                    add['quarter'] = quarter
                     for idx in range(len(raw)):
                         value = raw.loc[idx,'thstrm_amount'].replace('.','')
                         nonnumeric = re.search('[^-*0-9+.*]',value)
@@ -179,7 +187,10 @@ def get_fins_from_scratch():
                             add[raw.loc[idx,'account_nm']] = 0.0 
                         else:                           
                             add[raw.loc[idx,'account_nm']] = float(raw.loc[idx,'thstrm_amount'])
-        return add
+                            
+                    records.append(add)
+                    
+        return records
 
     fins = {}
     for corp in tqdm(corps):    
@@ -195,5 +206,5 @@ fins = get_fins_from_scratch()
 
 with open('finstats.json', 'r', encoding='utf-8') as file:
     fins = json.load(file)
-ak = pd.DataFrame(fins['AK홀딩스'])
-ak.groupby('year').get_group(2022).groupby('quarter').get_group('Q3')['매출총이익']
+ak = pd.DataFrame.from_dict(fins['AK홀딩스'])
+ak.loc[:,ak.columns.str.contains('당기순이익')]
