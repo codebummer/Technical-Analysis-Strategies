@@ -4,6 +4,10 @@ import sqlite3
 import os, sys, re, json
 from datetime import datetime
 from tqdm import tqdm
+import OpenDartReader
+import time
+os.chdir(r'C:\Users\omgho\OneDrive\문서\pyprojects')
+from DART_key import *
 
 def change_filenames():
     '''
@@ -25,7 +29,6 @@ def get_corp_list():
         tables = db.cursor().execute(query).fetchall()
 
     return [table[1].split('_')[0] for table in tables]
-
 
 def get_ni(corp, date):
     '''
@@ -64,10 +67,10 @@ def get_fins_corp(corp):
     changeqtr = {'Q1':'1분기보고서', 'Q2':'반기보고서', 'Q3':'3분기보고서', 'Q4':'사업보고서'}
 
        
-    fins = {}
-    for year in years:
-        for quarter in quarters:
-            fins[year+'_'+quarter] = {}
+    fins = {'year':[], 'quarter':[]}
+    # for year in years:
+    #     for quarter in quarters:
+    #         fins[year+'_'+quarter] = {}
             
     for file in tqdm(files):
         with sqlite3.connect(path+'\\'+file) as db:
@@ -82,9 +85,13 @@ def get_fins_corp(corp):
                     value = df.loc[idx,'thstrm_amount'].replace('.','')
                     nonnumeric = re.search('[^-*0-9+.*]',value)
                     if nonnumeric or value == '':
-                        fins[year+'_'+quarter][df.loc[idx,'account_nm']] = 0.0
+                        fins['year'].append(year)
+                        fins['quarter'].append(quarter)
+                        fins[df.loc[idx,'account_nm']] = 0.0                        
                     else:
-                        fins[year+'_'+quarter][df.loc[idx,'account_nm']] = float(df.loc[idx,'thstrm_amount'])
+                        fins['year'].append(year)
+                        fins['quarter'].append(quarter)
+                        fins[df.loc[idx,'account_nm']] = float(df.loc[idx,'thstrm_amount'])
             else:
                 continue
     return fins
@@ -106,11 +113,7 @@ def get_fins_all():
         quarters = ['Q4', 'Q3', 'Q2', 'Q1']
         changeqtr = {'Q1':'1분기보고서', 'Q2':'반기보고서', 'Q3':'3분기보고서', 'Q4':'사업보고서'}
 
-        
-        for year in years:
-            for quarter in quarters:
-                add[year+'_'+quarter] = {}
-                
+        add = {'year':[], 'quarter':[]}                
         for file in tqdm(files):
             with sqlite3.connect(path+'\\'+file) as db:
                 query = '''SELECT * FROM sqlite_master WHERE type='table';'''
@@ -124,9 +127,13 @@ def get_fins_all():
                         value = df.loc[idx,'thstrm_amount'].replace('.','')
                         nonnumeric = re.search('[^-*0-9+.*]',value)
                         if nonnumeric or value == '':
-                            add[year+'_'+quarter][df.loc[idx,'account_nm']] = 0.0
+                            add['year'].append(year)
+                            add['quarter'].append(quarter)
+                            add[df.loc[idx,'account_nm']] = 0.0 
                         else:
-                            add[year+'_'+quarter][df.loc[idx,'account_nm']] = float(df.loc[idx,'thstrm_amount'])
+                            add['year'].append(year)
+                            add['quarter'].append(quarter)                            
+                            add[df.loc[idx,'account_nm']] = float(df.loc[idx,'thstrm_amount'])
                 else:
                     continue
         return add
@@ -142,3 +149,51 @@ def get_fins_all():
     return fins
 
 fins = get_fins_all()
+
+
+def get_fins_from_scratch():
+    with sqlite3.connect(r'C:\Users\omgho\OneDrive\문서\pyprojects\fins_2022_Q3.db') as db:
+        query = '''SELECT * FROM sqlite_master WHERE type='table';'''
+        tables = db.cursor().execute(query).fetchall()
+        corps = [table[1].split('_')[0] for table in tables]
+        corps.sort()
+
+    dart = OpenDartReader(DART_KEY)
+    years = [year for year in range(2022, 2017, -1)]
+    quarters = {'11013':'Q1', '11012':'Q2', '11014':'Q3', '11011':'Q4'}
+
+    def _get_fins_corp(corp):
+        add = {'year':[], 'quarter':[]}
+        for year in years:
+            for code, quarter in quarters.items():            
+                try:
+                    raw = dart.finstate_all(corp, year, code)
+                    # without time.sleep(0.5), an error will occur
+                    time.sleep(0.5)
+                except:
+                    time.sleep(0.5)
+                    continue
+                if len(raw) != 0:
+                    raw = raw[['account_nm', 'thstrm_amount']]
+                    for idx in range(len(raw)):
+                        value = raw.loc[idx,'thstrm_amount'].replace('.','')
+                        nonnumeric = re.search('[^-*0-9+.*]',value)
+                        if nonnumeric or value == '':
+                            add['year'].append(year)
+                            add['quarter'].append(quarter)
+                            add[raw.loc[idx,'account_nm']] = 0.0 
+                        else:
+                            add['year'].append(year)
+                            add['quarter'].append(quarter)                            
+                            add[raw.loc[idx,'account_nm']] = float(raw.loc[idx,'thstrm_amount'])
+        return add
+
+    fins = {}
+    for corp in tqdm(corps):    
+        fins[corp] = _get_fins_corp(corp)
+
+    with open('finstats.json', 'w', encoding='utf-8') as file:
+        json.dump(fins, file, ensure_ascii=False)
+    print('saved financial statements in finanstats.json')                
+
+fins = get_fins_from_scratch()
