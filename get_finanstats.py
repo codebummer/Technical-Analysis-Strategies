@@ -76,18 +76,16 @@ def get_fins_corp(corp):
             tables = [table[1] for table in tables]
             year, quarter = file.strip('.db').split('_')
             table = corp+'_'+changeqtr[quarter]
+            fins['year'].append(year)
+            fins['quarter'].append(quarter)            
             if table in tables:
                 df = pd.read_sql(f'SELECT * FROM [{table}]', db)
                 for idx in range(len(df)):
                     value = df.loc[idx,'thstrm_amount'].replace('.','')
                     nonnumeric = re.search('[^-*0-9+.*]',value)
                     if nonnumeric or value == '':
-                        fins['year'].append(year)
-                        fins['quarter'].append(quarter)
                         fins[df.loc[idx,'account_nm']] = 0.0                        
-                    else:
-                        fins['year'].append(year)
-                        fins['quarter'].append(quarter)
+                    else: 
                         fins[df.loc[idx,'account_nm']] = float(df.loc[idx,'thstrm_amount'])
             else:
                 continue
@@ -118,18 +116,16 @@ def get_fins_all():
                 tables = [table[1] for table in tables]
                 year, quarter = file.strip('.db').split('_')
                 table = corp+'_'+changeqtr[quarter]
+                add['year'].append(year)
+                add['quarter'].append(quarter)                
                 if table in tables:
                     df = pd.read_sql(f'SELECT * FROM [{table}]', db)
                     for idx in range(len(df)):
                         value = df.loc[idx,'thstrm_amount'].replace('.','')
                         nonnumeric = re.search('[^-*0-9+.*]',value)
                         if nonnumeric or value == '':
-                            add['year'].append(year)
-                            add['quarter'].append(quarter)
                             add[df.loc[idx,'account_nm']] = 0.0 
-                        else:
-                            add['year'].append(year)
-                            add['quarter'].append(quarter)                            
+                        else:                        
                             add[df.loc[idx,'account_nm']] = float(df.loc[idx,'thstrm_amount'])
                 else:
                     continue
@@ -174,16 +170,14 @@ def get_fins_from_scratch():
                     continue
                 if len(raw) != 0:
                     raw = raw[['account_nm', 'thstrm_amount']]
+                    add['year'].append(year)
+                    add['quarter'].append(quarter)
                     for idx in range(len(raw)):
                         value = raw.loc[idx,'thstrm_amount'].replace('.','')
                         nonnumeric = re.search('[^-*0-9+.*]',value)
                         if nonnumeric or value == '':
-                            add['year'].append(year)
-                            add['quarter'].append(quarter)
                             add[raw.loc[idx,'account_nm']] = 0.0 
-                        else:
-                            add['year'].append(year)
-                            add['quarter'].append(quarter)                            
+                        else:                           
                             add[raw.loc[idx,'account_nm']] = float(raw.loc[idx,'thstrm_amount'])
         return add
 
