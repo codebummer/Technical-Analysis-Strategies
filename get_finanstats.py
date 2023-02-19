@@ -137,6 +137,7 @@ def get_fins_all():
         
     with open(r'D:\myprojects\MarketDB\finstats.json', 'w', encoding='utf-8') as file:
         json.dump(fins, file, ensure_ascii=False)
+    print('saved financial statements in finanstats.json')
         
     return fins
 
