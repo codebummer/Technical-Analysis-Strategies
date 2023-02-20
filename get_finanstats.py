@@ -5,9 +5,28 @@ import os, sys, re, json
 from datetime import datetime
 from tqdm import tqdm
 import OpenDartReader
+import xmltodict
 import time
-os.chdir(r'C:\Users\omgho\OneDrive\문서\pyprojects')
+os.chdir(r'D:\myprojects\MarketDB')
 from DART_key import *
+
+def get_tickers():
+    os.chdir(r'D:\myprojects\MarketDB\corpCode')
+    with open('CORPCODE.xml', encoding='utf-8') as file:
+        corps = xmltodict.parse(file.read())
+        corps = corps['result']['list']
+
+    tickers = {'ticker':{}, 'stock':{}}
+    for corp in corps:
+        if corp['stock_code'] != None:        
+            tickers['ticker'][corp['stock_code']] = corp['corp_name']
+            tickers['stock'][corp['corp_name']] = corp['stock_code']
+            
+    with open('ticker.json', 'w', encoding='utf-8') as file:
+        json.dump(tickers, file)
+        
+    return tickers
+
 
 def change_filenames():
     '''
@@ -27,10 +46,38 @@ def get_corp_list():
     with sqlite3.connect(path+'\\'+files[-1]) as db:
         query = '''SELECT * FROM sqlite_master WHERE type='table';'''
         tables = db.cursor().execute(query).fetchall()
+        tables = [table[1].split('_')[0] for table in tables]
+        tables.sort()
+    return tables
 
-    return [table[1].split('_')[0] for table in tables]
+def get_close_prices():
+    os.chdir(r'D:\myprojects\MarketDB')
+    files = os.listdir()
+    if 'close_prices.csv' not in files:
+        with open('ticker.json', encoding='utf-8') as file:
+            tickers = json.load(file)
 
-def get_ni(corp, date):
+        prices = pd.DataFrame()
+        for ticker, stock in tqdm(tickers['ticker'].items()):
+            try:
+                series = pdr.DataReader(ticker, 'naver')['Close']
+                series.name = stock
+                prices = pd.concat([prices, series], axis='columns')
+            except:
+                continue
+        prices.index.name = 'Date'
+        for stock in tqdm(prices):
+            if all(prices[stock]) == np.nan:
+                prices.drop(stock, inplace=True)
+        prices.to_csv('close_prices.csv', encoding='utf-8-sig')
+        
+        return prices
+    
+    else:
+        return pd.read_csv('close_prices.csv', parse_dates=['Date'], index_col=0)
+
+
+def get_single_ni(corp, date):
     '''
     corp: company name
     date: datetime.datetime value
@@ -52,6 +99,28 @@ def get_ni(corp, date):
         table = corp+'_'+quarter
         df = pd.read_sql(f'SELECT * FROM {table}', db)
         return int(df.loc[df['account_nm'].str.contains('순이익')].loc[df['account_detail'].str.contains('연결재무제표'),'thstrm_amount'].iloc[0])
+
+def get_ni():
+    os.chdir(r'D:\myprojects\MarketDB')
+    with open('finstats.json', encoding='utf-8') as file:
+        fins = json.load(file)
+
+    corps = get_corp_list()
+
+    ni = pd.DataFrame.from_dict(fins[corps[0]])[['year','quarter']]
+    for corp in tqdm(corps):
+        df = pd.DataFrame.from_dict(fins[corp])
+        candidates = df.loc[:,df.columns.str.contains('당기순이익')]
+        candidates.columns = candidates.columns.sort_values()
+        for col in candidates.columns:
+            if all(candidates[col])==0:
+                continue
+            else:
+                add = candidates[col]
+                add.name = corp
+                ni = pd.concat([ni,add], axis='columns')
+                break
+    return ni
 
 
 def get_fins_corp(corp):
@@ -92,8 +161,7 @@ def get_fins_corp(corp):
             
             fins.append(add)
             
-    return fins
-        
+    return fins        
 
 def get_fins_all():
     '''    
@@ -148,9 +216,6 @@ def get_fins_all():
         
     return fins
 
-fins = get_fins_all()
-
-
 def get_fins_from_scratch():
     with sqlite3.connect(r'C:\Users\omgho\OneDrive\문서\pyprojects\fins_2022_Q3.db') as db:
         query = '''SELECT * FROM sqlite_master WHERE type='table';'''
@@ -200,11 +265,11 @@ def get_fins_from_scratch():
         json.dump(fins, file, ensure_ascii=False)
     print('saved financial statements in finanstats.json')   
     
-    return fins             
+    return fins  
 
-fins = get_fins_from_scratch()
+# fins = get_fins_from_scratch()
 
-with open('finstats.json', 'r', encoding='utf-8') as file:
-    fins = json.load(file)
-ak = pd.DataFrame.from_dict(fins['AK홀딩스'])
-ak.loc[:,ak.columns.str.contains('당기순이익')]
+# with open('finstats.json', 'r', encoding='utf-8') as file:
+#     fins = json.load(file)
+# ak = pd.DataFrame.from_dict(fins['AK홀딩스'])
+# ak.loc[:,ak.columns.str.contains('당기순이익')]
