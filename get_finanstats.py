@@ -50,6 +50,17 @@ def get_corp_list():
         tables.sort()
     return tables
 
+def get_shares(stock):
+    dart = OpenDartReader(DART_KEY)
+    today = datetime.today()
+    tickers = get_tickers()
+    for year in range(today.year, today.year-6, -1):
+        for quarter in ['11011','11014','11012','11013']:
+            shares = dart.report(tickers['stock'][stock], '주식총수', year, quarter)
+            if len(shares) != 0:
+                if any(shares['isu_stock_totqy'] != '-'):
+                    return shares
+
 def get_close_prices():
     os.chdir(r'D:\myprojects\MarketDB')
     files = os.listdir()
@@ -167,54 +178,61 @@ def get_fins_all():
     '''    
     returns all companies' financial records all vailable in a dictionary
     '''
+    os.chdir(r'D:\myprojects\MarketDB')
+    files = os.listdir()
+    if 'finstats.json' not in files:
+        corps = get_corp_list()
+
+        def _get_single_corp(corp):
+            add = {}
+            path = r'D:\myprojects\MarketDB\KoreaFins'
+            files = os.listdir(path)
+            files.sort(reverse=True)
+            years = [str(i) for i in range(2022, 2017, -1)]
+            quarters = ['Q4', 'Q3', 'Q2', 'Q1']
+            changeqtr = {'Q1':'1분기보고서', 'Q2':'반기보고서', 'Q3':'3분기보고서', 'Q4':'사업보고서'}
+
+            records = []                
+            for file in tqdm(files):
+                with sqlite3.connect(path+'\\'+file) as db:
+                    add = {}
+                    query = '''SELECT * FROM sqlite_master WHERE type='table';'''
+                    tables = db.cursor().execute(query).fetchall()
+                    tables = [table[1] for table in tables]
+                    year, quarter = file.strip('.db').split('_')
+                    table = corp+'_'+changeqtr[quarter]
+                    add['year'] = year
+                    add['quarter'] = quarter
+                    if table in tables:
+                        df = pd.read_sql(f'SELECT * FROM [{table}]', db)
+                        for idx in range(len(df)):
+                            value = df.loc[idx,'thstrm_amount'].replace('.','')
+                            nonnumeric = re.search('[^-*0-9+.*]',value)
+                            if nonnumeric or value == '':
+                                add[df.loc[idx,'account_nm']] = 0.0 
+                            else:                        
+                                add[df.loc[idx,'account_nm']] = float(df.loc[idx,'thstrm_amount'])
+                    else:
+                        continue
+                    
+                    records.append(add)
+                    
+            return records
+
+        fins = {}
+        for corp in tqdm(corps):
+            fins[corp] = _get_single_corp(corp)
+            
+        with open(r'D:\myprojects\MarketDB\finstats.json', 'w', encoding='utf-8') as file:
+            json.dump(fins, file, ensure_ascii=False)
+        print('saved financial statements in finanstats.json')
+            
+        return fins
     
-    corps = get_corp_list()
+    else:
+        with open('finstats.json', 'r', encoding='utf-8') as file:
+            return json.load(file)
 
-    def _get_single_corp(corp):
-        add = {}
-        path = r'D:\myprojects\MarketDB\KoreaFins'
-        files = os.listdir(path)
-        files.sort(reverse=True)
-        years = [str(i) for i in range(2022, 2017, -1)]
-        quarters = ['Q4', 'Q3', 'Q2', 'Q1']
-        changeqtr = {'Q1':'1분기보고서', 'Q2':'반기보고서', 'Q3':'3분기보고서', 'Q4':'사업보고서'}
-
-        records = []                
-        for file in tqdm(files):
-            with sqlite3.connect(path+'\\'+file) as db:
-                add = {}
-                query = '''SELECT * FROM sqlite_master WHERE type='table';'''
-                tables = db.cursor().execute(query).fetchall()
-                tables = [table[1] for table in tables]
-                year, quarter = file.strip('.db').split('_')
-                table = corp+'_'+changeqtr[quarter]
-                add['year'] = year
-                add['quarter'] = quarter
-                if table in tables:
-                    df = pd.read_sql(f'SELECT * FROM [{table}]', db)
-                    for idx in range(len(df)):
-                        value = df.loc[idx,'thstrm_amount'].replace('.','')
-                        nonnumeric = re.search('[^-*0-9+.*]',value)
-                        if nonnumeric or value == '':
-                            add[df.loc[idx,'account_nm']] = 0.0 
-                        else:                        
-                            add[df.loc[idx,'account_nm']] = float(df.loc[idx,'thstrm_amount'])
-                else:
-                    continue
-                
-                records.append(add)
-                
-        return records
-
-    fins = {}
-    for corp in tqdm(corps):
-        fins[corp] = _get_single_corp(corp)
-        
-    with open(r'D:\myprojects\MarketDB\finstats.json', 'w', encoding='utf-8') as file:
-        json.dump(fins, file, ensure_ascii=False)
-    print('saved financial statements in finanstats.json')
-        
-    return fins
 
 def get_fins_from_scratch():
     with sqlite3.connect(r'C:\Users\omgho\OneDrive\문서\pyprojects\fins_2022_Q3.db') as db:
